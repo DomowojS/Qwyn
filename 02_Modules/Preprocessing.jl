@@ -15,6 +15,4 @@ function generateWF(prefix::AbstractString, folder::AbstractString)
     end
 end
 
-generateWF("WF", "01_Input")
-
 end
