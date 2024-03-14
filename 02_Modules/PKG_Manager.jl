@@ -4,7 +4,5 @@
 
 # Working with directories
 using Pkg
-function PKG_Manager()
-Pkg.add("FileIO")
-end
 using FileIO
+using Parameters
