@@ -33,7 +33,9 @@ function generateWF(prefix::AbstractString, folder::AbstractString)
             userdata["alpha"],
             userdata["TI_a"],
             userdata["Wind_rose"],
-            userdata["x"],
+            userdata["SimpleComp"],
+            userdata["AEPComp"],
+            userdata["Optim"],
             userdata["y"],
             userdata["z"]
         )
@@ -76,7 +78,9 @@ mutable struct Windfarm
         Wind_rose::Float64; # Get wind rose as specified in "04_Ambient_data"
     
     ##########      (4) Computational setting  ######################
-        x::Int;
+        SimpleComp::Bool;
+        AEPComp::Bool;
+        Optimisation::Bool;
     ##########      (5) Numerical parameters   ######################
         y::Int;
     ##########      (6) Graphical output       ######################
@@ -84,8 +88,8 @@ mutable struct Windfarm
 end
     
 # Constructor function to create instances of the struct Windfarm
-function WFConstructor(name::String, N::Int,  x_vec::Vector{Float64}, y_vec::Vector{Float64}, D::Float64, H::Float64, Cp::Vector{Float64}, Ct::Vector{Float64}, u_ambient::Float64, alpha::Float64, TI_a::Float64, Wind_rose::Float64, x::Int, y::Int, z::Int)
-        windfarm_instance = Windfarm(name, N,  x_vec, y_vec, D, H, Cp, Ct, u_ambient, alpha, TI_a, Wind_rose, x, y, z)
+function WFConstructor(name::String, N::Int,  x_vec::Vector{Float64}, y_vec::Vector{Float64}, D::Float64, H::Float64, Cp::Vector{Float64}, Ct::Vector{Float64}, u_ambient::Float64, alpha::Float64, TI_a::Float64, Wind_rose::Float64, SimpleComp::Bool, AEPComp::Bool, Optim::Bool, y::Int, z::Int)
+        windfarm_instance = Windfarm(name, N,  x_vec, y_vec, D, H, Cp, Ct, u_ambient, alpha, TI_a, Wind_rose, SimpleComp, AEPComp, Optim, y, z)
         return windfarm_instance
 end
 
