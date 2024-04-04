@@ -34,8 +34,8 @@ end
 # Iterate over defined cases. Compute one by one (according to settings)
 for WindFarm in WF
 
-
-println(WindFarm.name)
+    
+println("Computing: ", WindFarm.name)
 
 end
 

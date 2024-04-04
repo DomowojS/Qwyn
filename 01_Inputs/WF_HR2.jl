@@ -2,9 +2,9 @@
 userdata = OrderedDict{String, Any}(
     ##########      (1) Wind farm data         ######################
     # Name of the wind Farm
-    "name" => "HR1",
+    "name" => "HR2",
     # Wind Farm Data
-    "N" => 80, #Number of turbines  
+    "N" => 989898, #Number of turbines  
     "x_vec" => [1.0],   #X-Coordinates
     "y_vec" => [0.0],        #Y-Coordinates
 

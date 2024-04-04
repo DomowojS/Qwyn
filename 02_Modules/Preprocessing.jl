@@ -1,8 +1,11 @@
 #= 
-Script to Excecute & Initialise 
+Module for:
+    1) Reading input data
+    2) Initialising arrays & allocate space for computation
 =#
+
 module Preprocessing
-export generateWF
+export generateWF, ComputationData
 include("PKG_Manager.jl") #make neccecary packages available (using XX)
 
 # Function to generate struct instances from files in Input folder
@@ -13,35 +16,23 @@ function generateWF(prefix::AbstractString, folder::AbstractString)
     script_files = filter(file -> startswith(file, prefix), files)
     # Find the number of applicable inputfiles
     n=length(script_files);   
-    WF=Vector{Windfarm}(undef, n);  # Creating array to contain all input data
-    
-    # Execute each script -> Create array of mutable structs filled with information from the input file
+    WF=Vector{Windfarm}(undef, n);  # Creating array to contain all input data (of the type of Windfarm - mutable struct)
+
+    # Iterate over all input files and store them in struct array
     for i=1:n
         # User Input
-        include(joinpath(folder, script_files[i]))
+        include(joinpath(folder, script_files[i])) #Overwrite user data after each iteration
         # Create an instance of the struct
-        WF[i] = WFConstructor(
-            userdata["name"],
-            userdata["N"],
-            userdata["x_vec"],
-            userdata["y_vec"],
-            userdata["D"],
-            userdata["H"],
-            userdata["Cp"],
-            userdata["Ct"],
-            userdata["u_ambient"],
-            userdata["alpha"],
-            userdata["TI_a"],
-            userdata["Wind_rose"],
-            userdata["SimpleComp"],
-            userdata["AEPComp"],
-            userdata["Optim"],
-            userdata["y"],
-            userdata["z"]
-        )
+        WF[i] = WFConstructor(userdata)
     end
-return WF
-end
+return WF, CD
+end #generateWF
+    
+# Constructor function to create instances of the struct Windfarm
+function WFConstructor(userdata::OrderedDict{String, Any})
+    args = (userdata[arg] for arg in keys(userdata)) #Get all fields within the dictionary
+    return Windfarm(args...)                         #Pass them one by one to the strtuct definition
+end #WFConstructor
 
 # Initiate template struct, generation function.
 # Initialises all variables to be assigned from the input files.
@@ -85,12 +76,14 @@ mutable struct Windfarm
         y::Int;
     ##########      (6) Graphical output       ######################
         z::Int;
-end
-    
-# Constructor function to create instances of the struct Windfarm
-function WFConstructor(name::String, N::Int,  x_vec::Vector{Float64}, y_vec::Vector{Float64}, D::Float64, H::Float64, Cp::Vector{Float64}, Ct::Vector{Float64}, u_ambient::Float64, alpha::Float64, TI_a::Float64, Wind_rose::Float64, SimpleComp::Bool, AEPComp::Bool, Optim::Bool, y::Int, z::Int)
-        windfarm_instance = Windfarm(name, N,  x_vec, y_vec, D, H, Cp, Ct, u_ambient, alpha, TI_a, Wind_rose, SimpleComp, AEPComp, Optim, y, z)
-        return windfarm_instance
-end
+end # mutable struct Windfarm
 
-end
+mutable struct ComputationDATA
+    ########## Initialises/ Preallocates space for arrays needed for computation #########
+    RotorPoints::Vector{Float64};
+    TmpArray::Array{Float64,2};  
+end # mutable struct ComputationData
+
+
+
+end #module
