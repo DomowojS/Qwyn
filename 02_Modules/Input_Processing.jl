@@ -3,10 +3,10 @@ Module for:
     1) Reading input data
     2) Initialising arrays & allocate space for computation
 =#
+module Input_Processing
+using Pkg, FileIO, Parameters, InteractiveUtils, DataStructures, Revise
 
-module Preprocessing
 export generateWF, ComputationData
-include("PKG_Manager.jl") #make neccecary packages available (using XX)
 
 # Function to generate struct instances from files in Input folder
 function generateWF(prefix::AbstractString, folder::AbstractString)
@@ -25,7 +25,7 @@ function generateWF(prefix::AbstractString, folder::AbstractString)
         # Create an instance of the struct
         WF[i] = WFConstructor(userdata)
     end
-return WF, CD
+return WF
 end #generateWF
     
 # Constructor function to create instances of the struct Windfarm
@@ -53,6 +53,7 @@ mutable struct Windfarm
         H::Float64;             # Hub height in [m]
         Cp::Vector{Float64};    # Power coefficient - defined as .txt in "03_Turbine_Data"
         Ct::Vector{Float64};    # Thrust coefficient - defined as .txt in "03_Turbine_data"
+        Yaw::Vector{Float64};   # Yaw angle of each turbine
     
     ##########      (3) Atmospheric data       ######################
     #Use either 3.1 for single computation OR 3.2 for AEP computation
@@ -73,17 +74,9 @@ mutable struct Windfarm
         AEPComp::Bool;
         Optimisation::Bool;
     ##########      (5) Numerical parameters   ######################
-        y::Int;
+        RotorRes::Int;
     ##########      (6) Graphical output       ######################
         z::Int;
 end # mutable struct Windfarm
-
-mutable struct ComputationDATA
-    ########## Initialises/ Preallocates space for arrays needed for computation #########
-    RotorPoints::Vector{Float64};
-    TmpArray::Array{Float64,2};  
-end # mutable struct ComputationData
-
-
 
 end #module

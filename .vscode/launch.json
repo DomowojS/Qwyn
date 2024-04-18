@@ -7,11 +7,11 @@
         {
             "type": "julia",
             "request": "launch",
-            "name": "Run active Julia file",
+            "name": "Julia: Debugger",
             "program": "${file}",
             "stopOnEntry": false,
             "cwd": "${workspaceFolder}",
-            "juliaEnv": "${command:activeJuliaEnvironment}"
+            "juliaEnv": "${command:activeJuliaEnvironment}",
         }
     ]
 }

@@ -3,7 +3,13 @@ Script to Process computation &/ optimisation
 =#
 
 module SimpleComputation
-
+using Pkg
+using FileIO
+using Parameters
+using InteractiveUtils
+using DataStructures
+using LatinHypercubeSampling
+using Revise
 # Compute single wake
 
 # Compute mixed wake 
@@ -13,10 +19,6 @@ module SimpleComputation
 # Compute new turbine properties
 
 # Compute power output
-
-
-
-
 
 
 

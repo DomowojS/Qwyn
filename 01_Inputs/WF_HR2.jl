@@ -4,15 +4,16 @@ userdata = OrderedDict{String, Any}(
     # Name of the wind Farm
     "name" => "HR2",
     # Wind Farm Data
-    "N" => 989898, #Number of turbines  
+    "N" => 1, #Number of turbines  
     "x_vec" => [1.0],   #X-Coordinates
     "y_vec" => [0.0],        #Y-Coordinates
 
     ##########      (2) Turbine data           ######################
     "D" => 80.0,             # Turbine diameter in [m]
     "H" => 70.0,             # Hub height in [m]
-    "Cp" => [1.0, 2.0],    # Power coefficient - defined as .txt in "03_Turbine_Data"
-    "Ct" => [3.0, 4.0],    # Thrust coefficient - defined as .txt in "03_Turbine_data"
+    "Cp" => [1.0, 2.0],      # Power coefficient - defined as .txt in "03_Turbine_Data"
+    "Ct" => [3.0, 4.0],      # Thrust coefficient - defined as .txt in "03_Turbine_data"
+    "Yaw" => [45, 0.0, 0.0], # Yaw angle of the turbines
 
     ##########      (3) Atmospheric data       ######################
     #Use either 3.1 for single computation OR 3.2 for AEP computation
