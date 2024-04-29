@@ -3,8 +3,8 @@ Coding Plan:
 Function Blocks:
 %PreProcessing
     1) Initialise
-        1) Initialise Struct
-        2) Read in all ambient/ Turbine data
+        DONE 1) Initialise Struct 
+        DONE 2) Read in all ambient/ Turbine data
         3) compute coordinate variables
 %Processing
     2) Computation Block (Single)

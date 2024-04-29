@@ -45,16 +45,17 @@ mutable struct Windfarm
         N::Int; #Number of turbines
         
         x_vec::Vector{Float64};   #X-Coordinates
-        y_vec::Vector{Float64};        #Y-Coordinates
+        y_vec::Vector{Float64};   #Y-Coordinates
     
-    ##########      (2) Turbine data           ######################
-    
+    ##########      (2) Turbine data           ######################   
+        Yaw::Vector{Float64};   # Yaw angle of each turbine
+        VestasV80::Bool;        # Turbine Type
+        NREL_5MW::Bool;         # Turbine Type
         D::Float64;             # Turbine diameter in [m]
         H::Float64;             # Hub height in [m]
-        Cp::Vector{Float64};    # Power coefficient - defined as .txt in "03_Turbine_Data"
-        Ct::Vector{Float64};    # Thrust coefficient - defined as .txt in "03_Turbine_data"
-        Yaw::Vector{Float64};   # Yaw angle of each turbine
-    
+        P_Input::Matrix{Float64};    # Power coefficient - defined as .txt in "03_Turbine_Data"
+        Ct_Input::Matrix{Float64};    # Thrust coefficient - defined as .txt in "03_Turbine_data"
+
     ##########      (3) Atmospheric data       ######################
     #Use either 3.1 for single computation OR 3.2 for AEP computation
     

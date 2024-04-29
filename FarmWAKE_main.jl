@@ -41,10 +41,11 @@ for WindFarm in WF
     println("###########################")
 
     #Initialise all arrays & matrices needed for the computation.
-    CA=initCompArrays(WindFarm) #Initialises mutable struct "CA" which contains necessary computation arrays & computes coordinates acc. to user Input.
+    CS = initCompArrays(WindFarm)                   #Initialises mutable struct "CA" which contains necessary computation arrays & computes coordinates acc. to user Input.
+    WindFarm, CS = LoadTurbineDATA(WindFarm, CS)    #Update Input struct with provided power & thrust curves
     
-    
-    
+    #Compute single wake effect
+    WindFarm,CS = Ishihara_WakeModel(WindFarm, CS)  #Compute wakes of single turbines
     x=1;
 
 end
