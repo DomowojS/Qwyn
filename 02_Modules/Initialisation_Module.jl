@@ -1,7 +1,7 @@
 # Module to initialise matrices and compute all necessary coordinates
 
 module Initialisation_Module
-using LatinHypercubeSampling, JLD2, Interpolations#, PlotlyJS, Colors
+using JLD2, Interpolations, LinearAlgebra, LatinHypercubeSampling, PlotlyJS, Colors
 
 export initCompArrays, LoadTurbineDATA
 
@@ -11,54 +11,68 @@ function initCompArrays(WindFarm)
     # Adjust user input for computation
     alpha_Comp  =   deg2rad(270 - WindFarm.alpha) #User Input logic: Geographical. Computation logic: Flow from left to right (270°(Western wind)==0°)
     Yaw_Comp    =   deg2rad.(270 .- WindFarm.Yaw)
+    WindFarm.RotorRes = ceil(sqrt(WindFarm.RotorRes))^2 #Adjust rotor points to "perfect square" (for uniform point distribution)
+    num_YZ_Levels     = convert(Int, sqrt(WindFarm.RotorRes)) # Number of levels for Y and Z coordinate which is using during scattering coordinates
 
     ### Compute coordinates (in D) for wake computation ###
     # Dimenisons: Turbine's relative coordinate, Number of Points, Turbines number
-    XCoordinate = zeros(Float64, WindFarm.N-1 , WindFarm.RotorRes, WindFarm.N);
-    YCoordinate = zeros(Float64, WindFarm.N-1 , WindFarm.RotorRes, WindFarm.N);
-    ZCoordinate = zeros(Float64, WindFarm.N-1 , WindFarm.RotorRes, WindFarm.N); #Preassign hubheight to all coordinates (Normalised to D)
-    r = zeros(Float64, WindFarm.N-1 , WindFarm.RotorRes, WindFarm.N);
+    XCoordinate = zeros(Float64, WindFarm.N , WindFarm.RotorRes, WindFarm.N);
+    YCoordinate = zeros(Float64, WindFarm.N , WindFarm.RotorRes, WindFarm.N);
+    ZCoordinate = zeros(Float64, WindFarm.N , WindFarm.RotorRes, WindFarm.N); #Preassign hubheight to all coordinates (Normalised to D)
+    r           = zeros(Float64, WindFarm.N , WindFarm.RotorRes, WindFarm.N);
     TMPYCoord   = zeros(Float64, WindFarm.RotorRes, WindFarm.N); #For LHS distribution of Y coordinates
     TMPZCoord   = zeros(Float64, WindFarm.RotorRes, WindFarm.N); #For LHS distribution of Z coordinates
-    TMPRCoord   = zeros(Float64, WindFarm.RotorRes);    #For LHS distribution of Y&Z (First computation in polars then transformation to cartesian)
-    TMPphiCoord = zeros(Float64, WindFarm.RotorRes);    #For LHS distribution of Y&Z (First computation in polars then transformation to cartesian)
-    LHCPlan     = zeros(Float64, WindFarm.RotorRes,2);  #For LHS distribution of Y&Z
+    TMPRCoord   = Vector{Float64}(undef, WindFarm.RotorRes);    #For LHS distribution of Y&Z (First computation in polars then transformation to cartesian)
+    TMPphiCoord = Vector{Float64}(undef, WindFarm.RotorRes);    #For LHS distribution of Y&Z (First computation in polars then transformation to cartesian)
+    #LHCPlan     = zeros(Float64, WindFarm.RotorRes,2);  #For LHS distribution of Y&Z
 
     ## Initialise temporary X & Y coordinate for yaw angle transformation
     TMPYaw_X     = zeros(Float64, WindFarm.RotorRes, WindFarm.N);
     TMPYaw_Y     = zeros(Float64, WindFarm.RotorRes);
 
+    #= LHS Plan of Y/Z Points -> Not used anymore!
+
     ## Determine LHS points of each turbines Y & Z Coordinate (circular)
     #LHS for spanwise & height distribution of points (y&z coordinates) are first computed as polar coordinates.
     for i in 1:WindFarm.N
     LHCPlan = randomLHC(WindFarm.RotorRes,2)./WindFarm.RotorRes; #LHC plan for polars (r & phi).
-    TMPRCoord   = LHCPlan[:,1].*3;      #Radius always [0:0.5] (coordinates normalised to D)
+    TMPRCoord   = LHCPlan[:,1].*0.5;      #Radius always [0:0.5] (coordinates normalised to D)
     TMPphiCoord = LHCPlan[:,2].*2pi;      #Angle in RAD
+    
+    # Now convert & store coordinates as cartesian
+    TMPYCoord[:,i] = TMPRCoord .* cos.(TMPphiCoord);
+    TMPZCoord[:,i] = TMPRCoord .* sin.(TMPphiCoord);
+    =#
+
+    # Determine Y & Z coordinates according to user specified rotor resolution
+    # Y/Z will be distributed in polar cooordinates first. Then they will be transformed back to cartesian coordinates.
+    RDistribution   = LinRange(0, 3, num_YZ_Levels) 
+    phiDistribution = LinRange(0, 2pi, num_YZ_Levels)
+    TMPRCoord       = repeat(RDistribution, inner=num_YZ_Levels)
+    TMPphiCoord     = repeat(phiDistribution, outer=num_YZ_Levels)[:]
+
+    
+    for i in 1:WindFarm.N
     
     # Now convert & store coordinates as cartesian
     TMPYCoord[:,i] = TMPRCoord .* cos.(TMPphiCoord);
     TMPZCoord[:,i] = TMPRCoord .* sin.(TMPphiCoord);
 
     # Transform Y Coordinate according to yaw angle
-    TMPYaw_Y = TMPYCoord[:,i];
+    TMPYaw_Y       = TMPYCoord[:,i];
     TMPYCoord[:,i] = 0 .* sin(Yaw_Comp[i]) .+ TMPYCoord[:,i] .* cos(Yaw_Comp[i]);
     TMPYaw_X[:,i]  = 0 .* cos(Yaw_Comp[i]) .- TMPYaw_Y       .* sin(Yaw_Comp[i]);
     end
 
-    ## Find coordinates of all turbines relative to each other
-    XCoordinate[:, :, 1] .= TMPYaw_X[:,2:end]' .+ WindFarm.x_vec[2:end] .- WindFarm.x_vec[1];
-    YCoordinate[:, :, 1]  = TMPYCoord[:,2:end]' .+ WindFarm.y_vec[2:end] .- WindFarm.y_vec[1];
-    ZCoordinate[:, :, 1]  = TMPZCoord[:,2:end]';
-
+    for i in 1:WindFarm.N
     # Create coordinate array of the structure: 1.Dim: Relative turbine, 2.Dim: RotorPoints, 3.Dim: Absolute turbine
-    for i in 2:WindFarm.N
-        XCoordinate[:, :, i] .= vcat(TMPYaw_X[:,1:i-1]', TMPYaw_X[:,i+1:end]') .+ vcat(WindFarm.x_vec[1:i-1], WindFarm.x_vec[i+1:end]) .- WindFarm.x_vec[i];
-        YCoordinate[:, :, i] .= vcat(TMPYCoord[:,1:i-1]', TMPYCoord[:,i+1:end]') .+ vcat(WindFarm.y_vec[1:i-1], WindFarm.y_vec[i+1:end]) .- WindFarm.y_vec[i];
-        ZCoordinate[:, :, i] .= vcat(TMPZCoord[:,1:i-1]', TMPZCoord[:,i+1:end]');
+    XCoordinate[:, :, i] .= TMPYaw_X' .+ WindFarm.x_vec .- WindFarm.x_vec[i];
+    YCoordinate[:, :, i]  = TMPYCoord' .+ WindFarm.y_vec .- WindFarm.y_vec[i];
+    ZCoordinate[:, :, i]  = TMPZCoord';
     end
     
     # Transform with respect to wind direction
-    TMPX = zeros(Float64, WindFarm.N-1, WindFarm.RotorRes)
+    TMPX = zeros(Float64, WindFarm.N, WindFarm.RotorRes)
     for i in 1:WindFarm.N
         TMPX .= XCoordinate[:, :, i];
         XCoordinate[:, :, i] .=  TMPX .* cos(alpha_Comp) + YCoordinate[:, :, i] .* sin(alpha_Comp);
@@ -68,10 +82,10 @@ function initCompArrays(WindFarm)
     # Transform with respect to yaw angle
 
 
-#= COMMENTED OUT
+#=COMMENTED OUT
 3D Plot of Point!
     # Define colors
-    colors = distinguishable_colors(WindFarm.N-1, colorant"blue")
+    colors = distinguishable_colors(WindFarm.N, colorant"blue")
     
     # Create an empty plot
     layout = Layout(
@@ -102,7 +116,7 @@ function initCompArrays(WindFarm)
     scatter3d_plot = plot(layout)
     k=1;
     # Iterate over each row and add scatter traces to the plot
-    for i in 1:WindFarm.N-1
+    for i in 1:WindFarm.N
         x = XCoordinate[i, :,k]
         y = YCoordinate[i, :,k]
         z = ZCoordinate[i, :,k]
@@ -114,14 +128,13 @@ function initCompArrays(WindFarm)
     # Show plot
     display(scatter3d_plot)
 #End Plot   =# 
-
     CS=ComputationStruct(   XCoordinate, YCoordinate, ZCoordinate, r, alpha_Comp, Yaw_Comp,
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), 
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(size(XCoordinate)), zeros(size(XCoordinate)), 
                             zeros(size(XCoordinate)), zeros(size(XCoordinate)), zeros(size(XCoordinate)), zeros(size(XCoordinate))
                         )
-    return CS
+    return WindFarm, CS
 end #initCompArrays
 
 function LoadTurbineDATA(WindFarm, CS)
@@ -138,7 +151,6 @@ function LoadTurbineDATA(WindFarm, CS)
         CS.P_vec    .=  Interp_P(WindFarm.u_ambient);   #P of each turbine 
 
         CS.ZCoordinates .= CS.ZCoordinates .+ WindFarm.H./WindFarm.D;  #Adjust ZCoodinates for computation according to Hubheight
-
     elseif WindFarm.NREL_5MW==true && WindFarm.VestasV80==false
         WindFarm.D = 126;
         WindFarm.H = 90;

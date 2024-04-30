@@ -21,18 +21,18 @@ function Ishihara_WakeModel(WindFarm, CS)
     CS.r = sqrt.((CS.YCoordinates.*WindFarm.D).^2 .+ ((CS.ZCoordinates.*WindFarm.D).-WindFarm.H).^2) # Compute vector in radial & height direction for computation
 
     # Velocity deficit
-    CS.sigma    =   ifelse.(CS.XCoordinates .> 0, (CS.k .* CS.XCoordinates .+ CS.epsilon) .* WindFarm.D, 0); # Compute wake width of all turbines
-    CS.Delta_U   =  ifelse.(CS.XCoordinates .> 0, (1 ./ (CS.a .+ CS.b .* CS.XCoordinates .+ CS.c .* (1 .+ CS.XCoordinates).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.c_0_vec, 0);# Compute velocity deficit
+    CS.sigma    =   ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), (CS.k .* CS.XCoordinates .+ CS.epsilon) .* WindFarm.D, 0); # Compute wake width of all turbines
+    CS.Delta_U   =  ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), (1 ./ (CS.a .+ CS.b .* CS.XCoordinates .+ CS.c .* (1 .+ CS.XCoordinates).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.c_0_vec, 0);# Compute velocity deficit
     
     # Rotor-added turbulence
     
     #Include turbulence computation
-    CS.k1       =   ifelse.(CS.r .<= 0.5, (cos.(pi./2 .* (CS.r.-0.5))).^2, 1);
-    CS.k2       =   ifelse.(CS.r .<= 0.5, (cos.(pi./2 .* (CS.r.+0.5))).^2, 0);
-    CS.delta    =   ifelse.(CS.ZCoordinates.*WindFarm.D .< WindFarm.H, WindFarm.TI_a .* (sin.(pi .* ((WindFarm.H/WindFarm.D) .- CS.ZCoordinates)./(WindFarm.H./WindFarm.D))).^2, 0);
+    CS.k1       =   ifelse.(CS.r .<= 0.5 * WindFarm.D, (cos.(pi./2 .* (CS.r./WindFarm.D .- 0.5))).^2, 1);
+    CS.k2       =   ifelse.(CS.r .<= 0.5 * WindFarm.D, (cos.(pi./2 .* (CS.r./WindFarm.D .+ 0.5))).^2, 0);
+    CS.delta    =   ifelse.(CS.ZCoordinates.*WindFarm.D .< WindFarm.H, WindFarm.TI_a .* (sin.(pi .* (WindFarm.H .- (CS.ZCoordinates.*WindFarm.D))./WindFarm.H)).^2, 0);
 
-    CS.Delta_TI =   ifelse.(CS.XCoordinates .> 0, ((1 ./ (CS.d .+ CS.e .* CS.XCoordinates .+ CS.f .* (1 .+ CS.XCoordinates).^-2)) .* 
-                            (CS.k1 .* exp.(-(CS.r.* .- 0.5).^2 ./(2 .* (CS.sigma).^2)) .+ CS.k2 .* exp.(-(CS.r .+ 0.5).^2 ./(2 .* (CS.sigma).^2)))) .- CS.delta,
+    CS.Delta_TI =   ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), ((1 ./ (CS.d .+ CS.e .* CS.XCoordinates .+ CS.f .* (1 .+ CS.XCoordinates).^-2)) .* 
+                            (CS.k1 .* exp.(-(CS.r .- 0.5.*WindFarm.D).^2 ./(2 .* (CS.sigma).^2)) .+ CS.k2 .* exp.(-(CS.r .+ 0.5.*WindFarm.D).^2 ./(2 .* (CS.sigma).^2)))) .- CS.delta,
                             0);# Compute rotor-added turbulence
 
 #
@@ -41,8 +41,8 @@ struct_dict = Dict{String, Any}(string.(propertynames(CS)) .=> getfield.(Ref(CS)
 struct_dict2 = Dict{String, Any}(string.(propertynames(WindFarm)) .=> getfield.(Ref(WindFarm), propertynames(WindFarm)))
 
 # Specify the filename for the .mat file
-filename = "WindFarmCS.mat"
-filename2 = "WindFarmWF.mat"
+filename = "99_PlotWMATLAB/WindFarmCS.mat"
+filename2 = "99_PlotWMATLAB/WindFarmWF.mat"
 # Save the struct to the .mat file
 matwrite(filename, struct_dict)
 matwrite(filename2, struct_dict2)

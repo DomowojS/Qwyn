@@ -1,4 +1,4 @@
-#=  This Script excexutes the FarmWAKE tool. 
+#=  This Script excexutes the Qwyn. 
     Inputs are taken from 01_Inputs.
     All function blocks can be found in 02_Modules
 =#
@@ -41,15 +41,13 @@ for WindFarm in WF
     println("###########################")
 
     #Initialise all arrays & matrices needed for the computation.
-    CS = initCompArrays(WindFarm)                   #Initialises mutable struct "CA" which contains necessary computation arrays & computes coordinates acc. to user Input.
+    WindFarm, CS = initCompArrays(WindFarm)                   #Initialises mutable struct "CA" which contains necessary computation arrays & computes coordinates acc. to user Input.
     WindFarm, CS = LoadTurbineDATA(WindFarm, CS)    #Update Input struct with provided power & thrust curves
     
     #Compute single wake effect
     WindFarm,CS = Ishihara_WakeModel(WindFarm, CS)  #Compute wakes of single turbines
     x=1;
-
 end
-
 
 x=1
 
