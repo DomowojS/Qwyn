@@ -1,7 +1,7 @@
 # Module to initialise matrices and compute all necessary coordinates
 
 module Initialisation_Module
-using JLD2, Interpolations, LinearAlgebra, LatinHypercubeSampling, PlotlyJS, Colors
+using JLD2, Interpolations, LinearAlgebra#, LatinHypercubeSampling, PlotlyJS, Colors
 
 export initCompArrays, LoadTurbineDATA
 
@@ -138,6 +138,9 @@ function initCompArrays(WindFarm)
 end #initCompArrays
 
 function LoadTurbineDATA(WindFarm, CS)
+#= This function loads all turbine data necessary for the computation
+ It returns an update WindFarm & CS struct with Thrust coefficient and power curve, turbine diameter & hubheight. 
+ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the turbine chosen for modelling. =#
 
     if WindFarm.VestasV80==true && WindFarm.NREL_5MW==false
         WindFarm.D = 80;
@@ -170,6 +173,20 @@ function LoadTurbineDATA(WindFarm, CS)
 
     return WindFarm, CS
 end #LoadTurbineDATA
+
+function LoadAtmosphericData(WindFarm,CS)
+#= This function loads all atmospheric data necessary for the computation
+ It returns an updated WindFarm & CS struct with:
+  1) Simple Computation: Wind & TI shear profile according to the height coordinates/ rotor resolution chosen by the user.
+  2) AEP Computation: TBD
+=#
+
+
+
+x=1;
+return WindFarm, CS
+
+end #LoadAtmosphericData
 
 mutable struct ComputationStruct
     #Definition of struct (preassignment of arrays & space)

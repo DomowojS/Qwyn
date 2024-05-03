@@ -26,9 +26,10 @@ userdata = OrderedDict{String, Any}(
     #Use either 3.1 for single computation OR 3.2 for AEP computation
     # (3.1) Single computatiosn 
     #       This section is only used for single case computation    
-    "u_ambient" => 7.0, # Ambient wind speed in [m/s]
-    "alpha" => 270,    # Geographical direction of the wind speed in [°]. -> N == 0°
-    "TI_a" => 0.1,    # Ambient turbulence intensity in [-]
+    "u_ambient" => 7.0,     # Ambient wind speed in [m/s]
+    "alpha"     => 270,     # Geographical direction of the wind speed in [°]. -> N == 0°
+    "TI_a"      => 0.1,     # Ambient turbulence intensity in [-]
+    "z_Surf"    => 0.005,   # Surface roughness of the modelled case
     # (3.2) AEP computation 
     #       This section is only used for AEP computation      
     "Wind_rose" => 3.14159999, # Get wind rose as specified in "04_Ambient_data"
