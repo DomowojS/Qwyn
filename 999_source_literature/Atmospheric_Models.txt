@@ -1,8 +1,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Logarithmic wind profile %%
 
+For Neutral atmospheric conditions: 
+Logarithmic law as described on p.16 in 	Nielsen, F. G.: Offshore Wind Energy, Environmental Conditions and Dynamics of Fixed and Floating Turbines. New York, Unites States: Cambridge University Press, 2024. 
+											isbn: 9781009341455. doi: 10.1017/9781009341455.
 
-
+u(z) = (u_ambient*log(z/z_Surf))/log(z_r/z_Surf)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Turbulence profile	    %%

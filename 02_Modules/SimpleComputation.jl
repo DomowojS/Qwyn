@@ -12,17 +12,19 @@ using LatinHypercubeSampling
 using Revise
 #using PlotlyJS
 using MAT
+using LinearAlgebra
 export Ishihara_WakeModel
 
 function Ishihara_WakeModel(WindFarm, CS)
 
-    CS = ComputeEmpiricalVars(CS.Ct_vec, WindFarm.TI_a, CS); # Compute empirical values
+    CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f = ComputeEmpiricalVars(CS.Ct_vec, WindFarm.TI_a, 
+                                                            CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f); # Compute empirical values
     
     CS.r = sqrt.((CS.YCoordinates.*WindFarm.D).^2 .+ ((CS.ZCoordinates.*WindFarm.D).-WindFarm.H).^2) # Compute vector in radial & height direction for computation
 
     # Velocity deficit
     CS.sigma    =   ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), (CS.k .* CS.XCoordinates .+ CS.epsilon) .* WindFarm.D, 0); # Compute wake width of all turbines
-    CS.Delta_U   =  ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), (1 ./ (CS.a .+ CS.b .* CS.XCoordinates .+ CS.c .* (1 .+ CS.XCoordinates).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.c_0_vec, 0);# Compute velocity deficit
+    CS.Delta_U   =  ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), (1 ./ (CS.a .+ CS.b .* CS.XCoordinates .+ CS.c .* (1 .+ CS.XCoordinates).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.u_0_vec, 0);# Compute velocity deficit
     
     # Rotor-added turbulence
     
@@ -51,16 +53,16 @@ matwrite(filename2, struct_dict2)
 end
 #
 
-function ComputeEmpiricalVars(Ct, TI_a, CS)
-    CS.k       .= 0.11 .* Ct.^1.07  .* TI_a^0.2 
-    CS.epsilon .= 0.23 .* Ct.^-0.25 .* TI_a^0.17
-    CS.a       .= 0.93 .* Ct.^-0.75 .* TI_a^0.17
-    CS.b       .= 0.42 .* Ct.^0.6   .* TI_a^0.2
-    CS.c       .= 0.15 .* Ct.^-0.25 .* TI_a^-0.7
-    CS.d       .= 2.3  .* Ct.^1.2   .* TI_a^0.1
-    CS.e       .= 1.0               .* TI_a^0.1
-    CS.f       .= 0.7  .* Ct.^-3.2  .* TI_a^-0.45
-    return CS
+function ComputeEmpiricalVars(Ct, TI_a, k, epsilon, a, b, c, d, e, f)
+    k       .= 0.11 .* Ct.^1.07  .* TI_a^0.2 
+    epsilon .= 0.23 .* Ct.^-0.25 .* TI_a^0.17
+    a       .= 0.93 .* Ct.^-0.75 .* TI_a^0.17
+    b       .= 0.42 .* Ct.^0.6   .* TI_a^0.2
+    c       .= 0.15 .* Ct.^-0.25 .* TI_a^-0.7
+    d       .= 2.3  .* Ct.^1.2   .* TI_a^0.1
+    e       .= 1.0               .* TI_a^0.1
+    f       .= 0.7  .* Ct.^-3.2  .* TI_a^-0.45
+    return k, epsilon, a, b, c, d, e, f
 end
 # Compute single wake
 
