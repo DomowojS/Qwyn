@@ -22,7 +22,7 @@ function Ishihara_WakeModel(WindFarm, CS)
 
     # Velocity deficit
     CS.sigma    =   ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), (CS.k .* CS.XCoordinates .+ CS.epsilon) .* WindFarm.D, 0); # Compute wake width of all turbines
-    CS.Delta_U   =  ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), (1 ./ (CS.a .+ CS.b .* CS.XCoordinates .+ CS.c .* (1 .+ CS.XCoordinates).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.c_0_vec, 0);# Compute velocity deficit
+    CS.Delta_U   =  ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), (1 ./ (CS.a .+ CS.b .* CS.XCoordinates .+ CS.c .* (1 .+ CS.XCoordinates).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.u_0_vec, 0);# Compute velocity deficit
     
     # Rotor-added turbulence
     

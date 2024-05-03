@@ -3,7 +3,7 @@
 module Initialisation_Module
 using JLD2, Interpolations, LinearAlgebra#, LatinHypercubeSampling, PlotlyJS, Colors
 
-export initCompArrays, LoadTurbineDATA
+export initCompArrays, LoadTurbineDATA, LoadAtmosphericData
 
 function initCompArrays(WindFarm)
     println("Initialising arrays..")
@@ -46,7 +46,7 @@ function initCompArrays(WindFarm)
 
     # Determine Y & Z coordinates according to user specified rotor resolution
     # Y/Z will be distributed in polar cooordinates first. Then they will be transformed back to cartesian coordinates.
-    RDistribution   = LinRange(0, 3, num_YZ_Levels) 
+    RDistribution   = LinRange(0, 1.5, num_YZ_Levels) 
     phiDistribution = LinRange(0, 2pi, num_YZ_Levels)
     TMPRCoord       = repeat(RDistribution, inner=num_YZ_Levels)
     TMPphiCoord     = repeat(phiDistribution, outer=num_YZ_Levels)[:]
@@ -128,6 +128,7 @@ function initCompArrays(WindFarm)
     # Show plot
     display(scatter3d_plot)
 #End Plot   =# 
+
     CS=ComputationStruct(   XCoordinate, YCoordinate, ZCoordinate, r, alpha_Comp, Yaw_Comp,
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), 
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
@@ -140,11 +141,11 @@ end #initCompArrays
 function LoadTurbineDATA(WindFarm, CS)
 #= This function loads all turbine data necessary for the computation
  It returns an update WindFarm & CS struct with Thrust coefficient and power curve, turbine diameter & hubheight. 
- The ZCoordinate is also coorrected to have its origin at the Hubheigt of the turbine chosen for modelling. =#
+The ZCoordinate is also coorrected to have its origin at the Hubheigt of the turbine chosen for modelling. =#
 
     if WindFarm.VestasV80==true && WindFarm.NREL_5MW==false
         WindFarm.D = 80;
-        WindFarm.H = 70;
+        WindFarm.H = 70*3;
         data = load("04_Turbine_Data\\VestasV80_2MW.jld2")  # Load data from Input 
         WindFarm.Ct_Input = data["CT_Input"];               # Thrustcoefficient vs. Windspeed
         WindFarm.P_Input = data["P_Input"];                 # Power vs. Windspeed
@@ -181,11 +182,15 @@ function LoadAtmosphericData(WindFarm,CS)
   2) AEP Computation: TBD
 =#
 
+ WindFarm.u_ambient_zprofile=zeros(WindFarm.N,WindFarm.RotorRes,WindFarm.N); # Assign right size to velocity field
 
+ # Compute ambient velocity for each coordinate point according to wind shear profile
+ WindFarm.u_ambient_zprofile .= WindFarm.u_ambient .* log.(CS.ZCoordinates.*WindFarm.D./WindFarm.z_Surf)./log.(WindFarm.z_r./WindFarm.z_Surf);
 
-x=1;
-return WindFarm, CS
+ # Compute TI profile
+    #TBDone!
 
+ return WindFarm, CS
 end #LoadAtmosphericData
 
 mutable struct ComputationStruct
@@ -201,7 +206,7 @@ mutable struct ComputationStruct
     Yaw_Comp::Vector{Float64};  #Yawangle of each turbine
     Ct_vec::Array{Float64,3};    #Ct of each turbine
     P_vec::Array{Float64,3};     #P of each turbine 
-    c_0_vec::Array{Float64,3};   #Inflow velocity of each turbine  
+    u_0_vec::Array{Float64,3};   #Inflow velocity of each turbine  
     # Empirical values needed for Ishihara wake model
     k::Array{Float64,3};
     epsilon::Array{Float64,3};
