@@ -1,7 +1,7 @@
 # Module to initialise matrices and compute all necessary coordinates
 
 module Initialisation_Module
-using JLD2, Interpolations, LinearAlgebra, MAT#, LatinHypercubeSampling, PlotlyJS, Colors
+using JLD2, Interpolations, LinearAlgebra#, MAT, LatinHypercubeSampling, PlotlyJS, Colors
 
 export initCompArrays, LoadTurbineDATA, LoadAtmosphericData
 
@@ -109,18 +109,7 @@ function initCompArrays(WindFarm)
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(size(XCoordinate)), zeros(size(XCoordinate)), 
                             zeros(size(XCoordinate)), zeros(size(XCoordinate)), zeros(size(XCoordinate)), zeros(size(XCoordinate))
                         )
-    # Convert the struct to a dictionary
-    struct_dict = Dict{String, Any}(string.(propertynames(CS)) .=> getfield.(Ref(CS), propertynames(CS)))
-    struct_dict2 = Dict{String, Any}(string.(propertynames(WindFarm)) .=> getfield.(Ref(WindFarm), propertynames(WindFarm)))
-    
-    # Specify the filename for the .mat file
-    filename = "99_PlotWMATLAB/WindFarmCS_NewCoordinateSys.mat"
-    filename2 = "99_PlotWMATLAB/WindFarmWF_NewCoordinateSys.mat"
-    # Save the struct to the .mat file
-    matwrite(filename, struct_dict)
-    matwrite(filename2, struct_dict2)
-
-
+ 
     return WindFarm, CS
 
 end #initCompArrays
