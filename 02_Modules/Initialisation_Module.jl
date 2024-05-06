@@ -130,7 +130,7 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
         CS.Ct_vec   .=  Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
         CS.P_vec    .=  Interp_P(WindFarm.u_ambient);   #P of each turbine 
 
-        CS.Z_Levels .= CS.Z_Levels .+ WindFarm.H./WindFarm.D;  #Adjust ZCoodinates for computation according to Hubheight
+        CS.Z_Levels .= CS.Z_Levels ./WindFarm.D;  #Adjust ZCoodinates for computation according to Hubheight
     elseif WindFarm.NREL_5MW==true && WindFarm.VestasV80==false
         WindFarm.D = 126;
         WindFarm.H = 90;
@@ -156,11 +156,10 @@ function LoadAtmosphericData(WindFarm,CS)
   1) Simple Computation: Wind & TI shear profile according to the height coordinates/ rotor resolution chosen by the user.
   2) AEP Computation: TBD
 =#
-
- WindFarm.u_ambient_zprofile=zeros(WindFarm.N,WindFarm.RotorRes,WindFarm.N); # Assign right size to velocity field
+ WindFarm.u_ambient_zprofile=Vector{Float64}(undef,WindFarm.Z_Res) #Assign right size to vector
 
  # Compute ambient velocity for each coordinate point according to wind shear profile
- WindFarm.u_ambient_zprofile .= WindFarm.u_ambient .* log.(CS.ZCoordinates.*WindFarm.D./WindFarm.z_Surf)./log.(WindFarm.z_r./WindFarm.z_Surf);
+ WindFarm.u_ambient_zprofile .= ifelse.(CS.Z_Levels.>0,WindFarm.u_ambient .* log.(CS.Z_Levels.*WindFarm.D./WindFarm.z_Surf)./log.(WindFarm.z_r./WindFarm.z_Surf),0);
 
  # Compute TI profile
     #TBDone!

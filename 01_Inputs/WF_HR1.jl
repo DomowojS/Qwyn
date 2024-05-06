@@ -24,7 +24,7 @@ userdata = OrderedDict{String, Any}(
     "alpha"     => 270,     # [°] Geographical direction of the wind speed. -> N == 0°
     "TI_a"      => 0.1,     # [-] Ambient turbulence intensity in [-]
     "z_Surf"    => 0.005,   # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
-    "z_r"       => 70.0,      # [m] Height the average wind speed "u_ambient" was measured. If not known, choose z_u = 10
+    "z_r"       => 70.0,    # [m] Height the average wind speed "u_ambient" was measured. If not known, choose z_u = 10
 
     # (3.2) AEP computation 
     #       This section is only used for AEP computation      
@@ -56,5 +56,5 @@ userdata = OrderedDict{String, Any}(
     "P_Input"   => zeros(1,1), # Power coefficient - defined as .txt in "03_Turbine_Data"
     "Ct_Input"  => zeros(1,1), # Thrust coefficient - defined as .txt in "03_Turbine_data"
     #Atmospheric data placeholders:
-    "u_ambient_zprofile" => zeros(1,1,1), # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
+    "u_ambient_zprofile" => zeros(1,), # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
 )
