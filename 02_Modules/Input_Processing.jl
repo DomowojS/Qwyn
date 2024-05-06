@@ -73,9 +73,9 @@ mutable struct Windfarm
         AEPComp::Bool;
         Optimisation::Bool;
     ##########      (5) Numerical parameters   ######################
-        RotorRes::Int;
+        Y_Res::Int;
         Z_Max::Float64; #Maximum height
-        Z_Res::Float64; #Height resolution (number of height levels computed)
+        Z_Res::Int;     #Height resolution (number of height levels computed)
     ##########      (6) Graphical output       ######################
         z::Int;
     ##########   Literature Input              ######################

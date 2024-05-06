@@ -1,7 +1,7 @@
 # Module to initialise matrices and compute all necessary coordinates
 
 module Initialisation_Module
-using JLD2, Interpolations, LinearAlgebra#, LatinHypercubeSampling, PlotlyJS, Colors
+using JLD2, Interpolations, LinearAlgebra, MAT#, LatinHypercubeSampling, PlotlyJS, Colors
 
 export initCompArrays, LoadTurbineDATA, LoadAtmosphericData
 
@@ -11,72 +11,46 @@ function initCompArrays(WindFarm)
     # Adjust user input for computation
     alpha_Comp  =   deg2rad(270 - WindFarm.alpha) #User Input logic: Geographical. Computation logic: Flow from left to right (270°(Western wind)==0°)
     Yaw_Comp    =   deg2rad.(270 .- WindFarm.Yaw)
-    WindFarm.RotorRes = ceil(sqrt(WindFarm.RotorRes))^2 #Adjust rotor points to "perfect square" (for uniform point distribution)
-    num_YZ_Levels     = convert(Int, sqrt(WindFarm.RotorRes)) # Number of levels for Y and Z coordinate which is using during scattering coordinates
-
+    
     ### Compute coordinates (in D) for wake computation ###
-    # Dimenisons: Turbine's relative coordinate, Number of Points, Turbines number
-    XCoordinate = zeros(Float64, WindFarm.N , WindFarm.RotorRes, WindFarm.N); #Array for X coordinates of all points
-    YCoordinate = zeros(Float64, WindFarm.N , WindFarm.RotorRes, WindFarm.N); #Array for Y Coordinates of all points
-    ZCoordinate = zeros(Float64, WindFarm.N , WindFarm.RotorRes, WindFarm.N); #
-    r           = zeros(Float64, WindFarm.N , WindFarm.RotorRes, WindFarm.N); #
-    TMPYCoord   = zeros(Float64, WindFarm.RotorRes, WindFarm.N); #For LHS distribution of Y coordinates
-    TMPZCoord   = zeros(Float64, WindFarm.RotorRes, WindFarm.N); #For LHS distribution of Z coordinates
-    TMPRCoord   = Vector{Float64}(undef, WindFarm.RotorRes);    #For LHS distribution of Y&Z (First computation in polars then transformation to cartesian)
-    TMPphiCoord = Vector{Float64}(undef, WindFarm.RotorRes);    #For LHS distribution of Y&Z (First computation in polars then transformation to cartesian)
-    #LHCPlan     = zeros(Float64, WindFarm.RotorRes,2);  #For LHS distribution of Y&Z
+    # Dimenisons: Relative X Coordinate, Relative Y Coordinate, Z Coordinate, Absolute turbine number
+    XCoordinate = zeros(Float64, WindFarm.N , WindFarm.Y_Res, 1, WindFarm.N);  #Array for X coordinates of all points
+    YCoordinate = zeros(Float64, WindFarm.N , WindFarm.Y_Res, 1, WindFarm.N);  #Array for Y Coordinates of all points
+    Z_Levels    = Vector{Float64}(undef,WindFarm.Z_Res);                    #Vector containing all height coordinates
+
+    TMPYCoord   = zeros(Float64, WindFarm.Y_Res, WindFarm.N); #For yaw transformation of coordinates (Y coordinate)
+    TMPXCoord   = zeros(Float64, WindFarm.Y_Res, WindFarm.N); #For yaw transformation of coordinates (X coordinate)
+
+    #TMPZCoord   = zeros(Float64, WindFarm.RotorRes, 1, WindFarm.N); #For LHS distribution of Z coordinates
 
     ## Initialise temporary X & Y coordinate for yaw angle transformation
-    TMPYaw_X     = zeros(Float64, WindFarm.RotorRes, WindFarm.N);
-    TMPYaw_Y     = zeros(Float64, WindFarm.RotorRes);
+    #TMPYaw_X     = zeros(Float64, WindFarm.RotorRes, WindFarm.N);
+    #TMPY_vector     = zeros(Float64, WindFarm.Y_Res);
 
-    #= LHS Plan of Y/Z Points -> Not used anymore!
 
-    ## Determine LHS points of each turbines Y & Z Coordinate (circular)
-    #LHS for spanwise & height distribution of points (y&z coordinates) are first computed as polar coordinates.
-    for i in 1:WindFarm.N
-    LHCPlan = randomLHC(WindFarm.RotorRes,2)./WindFarm.RotorRes; #LHC plan for polars (r & phi).
-    TMPRCoord   = LHCPlan[:,1].*0.5;      #Radius always [0:0.5] (coordinates normalised to D)
-    TMPphiCoord = LHCPlan[:,2].*2pi;      #Angle in RAD
-    
-    # Now convert & store coordinates as cartesian
-    TMPYCoord[:,i] = TMPRCoord .* cos.(TMPphiCoord);
-    TMPZCoord[:,i] = TMPRCoord .* sin.(TMPphiCoord);
-    =#
-
-    # Determine Y & Z coordinates according to user specified rotor resolution
-    # Y/Z will be distributed in polar cooordinates first. Then they will be transformed back to cartesian coordinates.
-    RDistribution   = LinRange(0, 1.5, num_YZ_Levels) 
-    phiDistribution = LinRange(0, 2pi, num_YZ_Levels)
-    TMPRCoord       = repeat(RDistribution, inner=num_YZ_Levels)
-    TMPphiCoord     = repeat(phiDistribution, outer=num_YZ_Levels)[:]
+    # Distribute the Y Coordinate 
+    TMPY_vector     = LinRange(-0.5, 0.5, WindFarm.Y_Res) 
 
     
     for i in 1:WindFarm.N
-    
-    # Now convert & store coordinates as cartesian
-    TMPYCoord[:,i] = TMPRCoord .* cos.(TMPphiCoord);
-    TMPZCoord[:,i] = TMPRCoord .* sin.(TMPphiCoord);
-
     # Transform Y Coordinate according to yaw angle
-    TMPYaw_Y       = TMPYCoord[:,i];
-    TMPYCoord[:,i] = 0 .* sin(Yaw_Comp[i]) .+ TMPYCoord[:,i] .* cos(Yaw_Comp[i]);
-    TMPYaw_X[:,i]  = 0 .* cos(Yaw_Comp[i]) .- TMPYaw_Y       .* sin(Yaw_Comp[i]);
+    TMPYCoord[:,i]  = 0 .* sin(Yaw_Comp[i]) .+ TMPY_vector .* cos(Yaw_Comp[i]);
+    TMPXCoord[:,i]  = 0 .* cos(Yaw_Comp[i]) .- TMPY_vector .* sin(Yaw_Comp[i]);
     end
 
     for i in 1:WindFarm.N
     # Create coordinate array of the structure: 1.Dim: Relative turbine, 2.Dim: RotorPoints, 3.Dim: Absolute turbine
-    XCoordinate[:, :, i] .= TMPYaw_X' .+ WindFarm.x_vec .- WindFarm.x_vec[i];
-    YCoordinate[:, :, i]  = TMPYCoord' .+ WindFarm.y_vec .- WindFarm.y_vec[i];
-    ZCoordinate[:, :, i]  = TMPZCoord';
+    XCoordinate[:, :, 1, i] .= TMPXCoord' .+ WindFarm.x_vec .- WindFarm.x_vec[i];
+    YCoordinate[:, :, 1, i]  = TMPYCoord' .+ WindFarm.y_vec .- WindFarm.y_vec[i];
     end
-    
+    Z_Levels = LinRange(0, WindFarm.Z_Max, WindFarm.Z_Res);
+
     # Transform with respect to wind direction
-    TMPX = zeros(Float64, WindFarm.N, WindFarm.RotorRes)
+    TMPX = zeros(Float64, WindFarm.N, WindFarm.Y_Res)
     for i in 1:WindFarm.N
-        TMPX .= XCoordinate[:, :, i];
-        XCoordinate[:, :, i] .=  TMPX .* cos(alpha_Comp) + YCoordinate[:, :, i] .* sin(alpha_Comp);
-        YCoordinate[:, :, i] .= -TMPX .* sin(alpha_Comp) + YCoordinate[:, :, i] .* cos(alpha_Comp);
+        TMPX .= XCoordinate[:, :, 1, i];
+        XCoordinate[:, :, 1, i] .=  TMPX .* cos(alpha_Comp) + YCoordinate[:, :, 1, i] .* sin(alpha_Comp);
+        YCoordinate[:, :, 1, i] .= -TMPX .* sin(alpha_Comp) + YCoordinate[:, :, 1, i] .* cos(alpha_Comp);
     end
     
     # Transform with respect to yaw angle
@@ -117,9 +91,9 @@ function initCompArrays(WindFarm)
     k=1;
     # Iterate over each row and add scatter traces to the plot
     for i in 1:WindFarm.N
-        x = XCoordinate[i, :,k]
-        y = YCoordinate[i, :,k]
-        z = ZCoordinate[i, :,k]
+        x = XCoordinate[i, :, 1, k]
+        y = YCoordinate[i, :, 1, k]
+        #z = ZCoordinate[i, :, 1, k]
         
         scatter_trace = scatter3d(x=x, y=y, z=z, mode="markers", marker_size=5, marker_color=colors[i], name="Set $i")
         add_trace!(scatter3d_plot, scatter_trace)
@@ -129,13 +103,26 @@ function initCompArrays(WindFarm)
     display(scatter3d_plot)
 #End Plot   =# 
 
-    CS=ComputationStruct(   XCoordinate, YCoordinate, ZCoordinate, r, alpha_Comp, Yaw_Comp,
-                            zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), 
-                            zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
-                            zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(size(XCoordinate)), zeros(size(XCoordinate)), 
+    CS=ComputationStruct(   XCoordinate, YCoordinate, Z_Levels, zeros(WindFarm.N , WindFarm.Y_Res, 1, WindFarm.N), alpha_Comp, Yaw_Comp,
+                            zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), (zeros(1,1,1,WindFarm.N) .+ WindFarm.u_ambient), 
+                            zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), 
+                            zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(size(XCoordinate)), zeros(size(XCoordinate)), 
                             zeros(size(XCoordinate)), zeros(size(XCoordinate)), zeros(size(XCoordinate)), zeros(size(XCoordinate))
                         )
+    # Convert the struct to a dictionary
+    struct_dict = Dict{String, Any}(string.(propertynames(CS)) .=> getfield.(Ref(CS), propertynames(CS)))
+    struct_dict2 = Dict{String, Any}(string.(propertynames(WindFarm)) .=> getfield.(Ref(WindFarm), propertynames(WindFarm)))
+    
+    # Specify the filename for the .mat file
+    filename = "99_PlotWMATLAB/WindFarmCS_NewCoordinateSys.mat"
+    filename2 = "99_PlotWMATLAB/WindFarmWF_NewCoordinateSys.mat"
+    # Save the struct to the .mat file
+    matwrite(filename, struct_dict)
+    matwrite(filename2, struct_dict2)
+
+
     return WindFarm, CS
+
 end #initCompArrays
 
 function LoadTurbineDATA(WindFarm, CS)
@@ -196,33 +183,33 @@ end #LoadAtmosphericData
 mutable struct ComputationStruct
     #Definition of struct (preassignment of arrays & space)
     #Coordinates/ Arrays
-    XCoordinates::Array{Float64,3};
-    YCoordinates::Array{Float64,3};
-    ZCoordinates::Array{Float64,3};
-    r::Array{Float64,3}; #Needed for single wake computation. Vector in radial & height direction.
+    XCoordinates::Array{Float64,4};
+    YCoordinates::Array{Float64,4};
+    Z_Levels::Vector{Float64};
+    r::Array{Float64,4}; #Needed for single wake computation. Vector in radial & height direction.
     # Ambient data
     alpha_Comp::Float64;
     # Turbine specifics
     Yaw_Comp::Vector{Float64};  #Yawangle of each turbine
-    Ct_vec::Array{Float64,3};    #Ct of each turbine
-    P_vec::Array{Float64,3};     #P of each turbine 
-    u_0_vec::Array{Float64,3};   #Inflow velocity of each turbine  
+    Ct_vec::Array{Float64,4};    #Ct of each turbine
+    P_vec::Array{Float64,4};     #P of each turbine 
+    u_0_vec::Array{Float64,4};   #Inflow velocity of each turbine  
     # Empirical values needed for Ishihara wake model
-    k::Array{Float64,3};
-    epsilon::Array{Float64,3};
-    a::Array{Float64,3};
-    b::Array{Float64,3};
-    c::Array{Float64,3};
-    d::Array{Float64,3};
-    e::Array{Float64,3};
-    f::Array{Float64,3};
+    k::Array{Float64,4};
+    epsilon::Array{Float64,4};
+    a::Array{Float64,4};
+    b::Array{Float64,4};
+    c::Array{Float64,4};
+    d::Array{Float64,4};
+    e::Array{Float64,4};
+    f::Array{Float64,4};
     #Arrays needed for Wake computation
-    sigma::Array{Float64,3};    #Wakewidth
-    Delta_U::Array{Float64,3};  #Velocity deficit
-    k1::Array{Float64,3};       #Parameter for turbulence computation
-    k2::Array{Float64,3};       #Parameter for turbulence computation
-    delta::Array{Float64,3};    #Parameter for turbulence computation
-    Delta_TI::Array{Float64,3}; #Rotor-added turbulence
+    sigma::Array{Float64,4};    #Wakewidth
+    Delta_U::Array{Float64,4};  #Velocity deficit
+    k1::Array{Float64,4};       #Parameter for turbulence computation
+    k2::Array{Float64,4};       #Parameter for turbulence computation
+    delta::Array{Float64,4};    #Parameter for turbulence computation
+    Delta_TI::Array{Float64,4}; #Rotor-added turbulence
 
 end #mutable struct "ComputationStruct"
 
