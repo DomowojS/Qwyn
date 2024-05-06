@@ -130,7 +130,7 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
         CS.Ct_vec   .=  Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
         CS.P_vec    .=  Interp_P(WindFarm.u_ambient);   #P of each turbine 
 
-        CS.ZCoordinates .= CS.ZCoordinates .+ WindFarm.H./WindFarm.D;  #Adjust ZCoodinates for computation according to Hubheight
+        CS.Z_Levels .= CS.Z_Levels .+ WindFarm.H./WindFarm.D;  #Adjust ZCoodinates for computation according to Hubheight
     elseif WindFarm.NREL_5MW==true && WindFarm.VestasV80==false
         WindFarm.D = 126;
         WindFarm.H = 90;
@@ -142,8 +142,7 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
         CS.Ct_vec   .=  Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
         CS.P_vec    .=  Interp_P(WindFarm.u_ambient);   #P of each turbine
         
-        CS.ZCoordinates .= CS.ZCoordinates .+ WindFarm.H./WindFarm.D;  #Adjust ZCoodinates for computation according to Hubheight
-        
+        CS.Z_Levels .= CS.Z_Levels .+ WindFarm.H./WindFarm.D;  #Adjust ZCoodinates for computation according to Hubheight 
     else
         error("ERROR: Wrong choice of turbine model in", WindFarm.Name,"Make sure to choose one but not more.")
     end
