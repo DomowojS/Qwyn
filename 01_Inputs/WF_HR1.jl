@@ -6,12 +6,12 @@ userdata = OrderedDict{String, Any}(
     # Name of the wind Farm
     "name" => "HR1",
     # Wind Farm Data
-    "N" => 3, #Number of turbines  
-    "x_vec" => [0, 7, 14],   #X-Coordinates
-    "y_vec" => [0, 0, 3],     #Y-Coordinates
+    "N" => 44, #Number of turbines  
+    "x_vec" => LinRange(0,21,44),   #X-Coordinates
+    "y_vec" => zeros(44,),     #Y-Coordinates
 
     ##########      (2) Turbine data           ######################
-    "Yaw" => 315 .+ zeros(3,), # Yaw angle of the turbines (In geographical DEG)
+    "Yaw" => 270 .+ zeros(44,), # Yaw angle of the turbines (In geographical DEG)
     #Turbine Type
     "VestasV80" => true,
     "NREL_5MW"  => false,
@@ -20,7 +20,7 @@ userdata = OrderedDict{String, Any}(
     #Use either 3.1 for single computation OR 3.2 for AEP computation
     # (3.1) Single computatiosn 
     #       This section is only used for single case computation    
-    "u_ambient" => 7.0,     # [m/s] Ambient wind speed
+    "u_ambient" => 10.0,     # [m/s] Ambient wind speed
     "alpha"     => 270,     # [°] Geographical direction of the wind speed. -> N == 0°
     "TI_a"      => 0.1,     # [-] Ambient turbulence intensity in [-]
     "z_Surf"    => 0.005,   # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
@@ -56,5 +56,5 @@ userdata = OrderedDict{String, Any}(
     "P_Input"   => zeros(1,1), # Power coefficient - defined as .txt in "03_Turbine_Data"
     "Ct_Input"  => zeros(1,1), # Thrust coefficient - defined as .txt in "03_Turbine_data"
     #Atmospheric data placeholders:
-    "u_ambient_zprofile" => zeros(1,), # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
+    "u_ambient_zprofile" => zeros(1,1,1,1), # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
 )

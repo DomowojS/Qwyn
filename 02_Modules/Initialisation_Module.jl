@@ -16,7 +16,7 @@ function initCompArrays(WindFarm)
     # Dimenisons: Relative X Coordinate, Relative Y Coordinate, Z Coordinate, Absolute turbine number
     XCoordinate = zeros(Float64, WindFarm.N , WindFarm.Y_Res, 1, WindFarm.N);  #Array for X coordinates of all points
     YCoordinate = zeros(Float64, WindFarm.N , WindFarm.Y_Res, 1, WindFarm.N);  #Array for Y Coordinates of all points
-    Z_Levels    = Vector{Float64}(undef,WindFarm.Z_Res);                    #Vector containing all height coordinates
+    Z_Levels    = zeros(Float64, 1, 1, WindFarm.Z_Res, 1);                    #Vector containing all height coordinates
 
     TMPYCoord   = zeros(Float64, WindFarm.Y_Res, WindFarm.N); #For yaw transformation of coordinates (Y coordinate)
     TMPXCoord   = zeros(Float64, WindFarm.Y_Res, WindFarm.N); #For yaw transformation of coordinates (X coordinate)
@@ -29,7 +29,7 @@ function initCompArrays(WindFarm)
 
 
     # Distribute the Y Coordinate 
-    TMPY_vector     = LinRange(-0.5, 0.5, WindFarm.Y_Res) 
+    TMPY_vector     = LinRange(-1.5, 1.5, WindFarm.Y_Res) 
 
     
     for i in 1:WindFarm.N
@@ -43,7 +43,7 @@ function initCompArrays(WindFarm)
     XCoordinate[:, :, 1, i] .= TMPXCoord' .+ WindFarm.x_vec .- WindFarm.x_vec[i];
     YCoordinate[:, :, 1, i]  = TMPYCoord' .+ WindFarm.y_vec .- WindFarm.y_vec[i];
     end
-    Z_Levels = LinRange(0, WindFarm.Z_Max, WindFarm.Z_Res);
+    Z_Levels[1,1,:,1] = LinRange(0, WindFarm.Z_Max, WindFarm.Z_Res);
 
     # Transform with respect to wind direction
     TMPX = zeros(Float64, WindFarm.N, WindFarm.Y_Res)
@@ -103,7 +103,7 @@ function initCompArrays(WindFarm)
     display(scatter3d_plot)
 #End Plot   =# 
 
-    CS=ComputationStruct(   XCoordinate, YCoordinate, Z_Levels, zeros(WindFarm.N , WindFarm.Y_Res, 1, WindFarm.N), alpha_Comp, Yaw_Comp,
+    CS=ComputationStruct(   XCoordinate, YCoordinate, Z_Levels, zeros(WindFarm.N , WindFarm.Y_Res, WindFarm.Z_Res, WindFarm.N), alpha_Comp, Yaw_Comp,
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), (zeros(1,1,1,WindFarm.N) .+ WindFarm.u_ambient), 
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), 
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(size(XCoordinate)), zeros(size(XCoordinate)), 
@@ -118,10 +118,11 @@ function LoadTurbineDATA(WindFarm, CS)
 #= This function loads all turbine data necessary for the computation
  It returns an update WindFarm & CS struct with Thrust coefficient and power curve, turbine diameter & hubheight. 
 The ZCoordinate is also coorrected to have its origin at the Hubheigt of the turbine chosen for modelling. =#
+    println("loading turbine data..")
 
     if WindFarm.VestasV80==true && WindFarm.NREL_5MW==false
         WindFarm.D = 80;
-        WindFarm.H = 70*3;
+        WindFarm.H = 70;
         data = load("04_Turbine_Data\\VestasV80_2MW.jld2")  # Load data from Input 
         WindFarm.Ct_Input = data["CT_Input"];               # Thrustcoefficient vs. Windspeed
         WindFarm.P_Input = data["P_Input"];                 # Power vs. Windspeed
@@ -156,10 +157,11 @@ function LoadAtmosphericData(WindFarm,CS)
   1) Simple Computation: Wind & TI shear profile according to the height coordinates/ rotor resolution chosen by the user.
   2) AEP Computation: TBD
 =#
- WindFarm.u_ambient_zprofile=Vector{Float64}(undef,WindFarm.Z_Res) #Assign right size to vector
+ println("loading atmospheric data..")
+ WindFarm.u_ambient_zprofile=Array{Float64,4}(undef,1,1,WindFarm.Z_Res,1) #Assign right size to vector
 
  # Compute ambient velocity for each coordinate point according to wind shear profile
- WindFarm.u_ambient_zprofile .= ifelse.(CS.Z_Levels.>0,WindFarm.u_ambient .* log.(CS.Z_Levels.*WindFarm.D./WindFarm.z_Surf)./log.(WindFarm.z_r./WindFarm.z_Surf),0);
+ WindFarm.u_ambient_zprofile .= ifelse.(CS.Z_Levels.>0, WindFarm.u_ambient .* log.(CS.Z_Levels.*WindFarm.D./WindFarm.z_Surf)./log.(WindFarm.z_r./WindFarm.z_Surf),0);
 
  # Compute TI profile
     #TBDone!
@@ -172,7 +174,7 @@ mutable struct ComputationStruct
     #Coordinates/ Arrays
     XCoordinates::Array{Float64,4};
     YCoordinates::Array{Float64,4};
-    Z_Levels::Vector{Float64};
+    Z_Levels::Array{Float64,4};
     r::Array{Float64,4}; #Needed for single wake computation. Vector in radial & height direction.
     # Ambient data
     alpha_Comp::Float64;

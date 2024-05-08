@@ -84,7 +84,7 @@ mutable struct Windfarm
         P_Input::Matrix{Float64};    # Power coefficient - defined as .txt in "03_Turbine_Data"
         Ct_Input::Matrix{Float64};    # Thrust coefficient - defined as .txt in "03_Turbine_data"
         #Atmospheric data placeholders:
-        u_ambient_zprofile::Vector{Float64}; # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
+        u_ambient_zprofile::Array{Float64,4}; # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
 end # mutable struct Windfarm
 
 end #module
