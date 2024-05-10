@@ -30,7 +30,7 @@ function Ishihara_WakeModel(WindFarm, CS)
     println("..computing velocity deficit..")
     CS.Delta_U   =  ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), (1 ./ (CS.a .+ CS.b .* CS.XCoordinates .+ CS.c .* (1 .+ CS.XCoordinates).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.u_0_vec, 0);# Compute velocity deficit
     
-    #=Rotor-added turbulence
+    #Rotor-added turbulence
     println("..computing turbulence empirical values..")
     #Include turbulence computation
     CS.k1       =   ifelse.(CS.r .<= 0.5 * WindFarm.D, (cos.(pi./2 .* (CS.r./WindFarm.D .- 0.5))).^2, 1);
@@ -42,7 +42,7 @@ function Ishihara_WakeModel(WindFarm, CS)
                             (CS.k1 .* exp.(-(CS.r .- 0.5.*WindFarm.D).^2 ./(2 .* (CS.sigma).^2)) .+ CS.k2 .* exp.(-(CS.r .+ 0.5.*WindFarm.D).^2 ./(2 .* (CS.sigma).^2)))) .- CS.delta,
                             0);# Compute rotor-added turbulence
     
-=#
+
     println("..single wake computation finished!")
                             
                             #

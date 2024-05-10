@@ -3,7 +3,7 @@
 module Initialisation_Module
 using JLD2, Interpolations, LinearAlgebra#, MAT, LatinHypercubeSampling, PlotlyJS, Colors
 
-export initCompArrays, LoadTurbineDATA, LoadAtmosphericData
+export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!
 
 function initCompArrays(WindFarm)
     println("Initialising arrays..")
@@ -18,8 +18,8 @@ function initCompArrays(WindFarm)
     YCoordinate = zeros(Float64, WindFarm.N , WindFarm.Y_Res, 1, WindFarm.N);  #Array for Y Coordinates of all points
     Z_Levels    = zeros(Float64, 1, 1, WindFarm.Z_Res, 1);                    #Vector containing all height coordinates
 
-    TMPYCoord   = zeros(Float64, WindFarm.Y_Res, WindFarm.N); #For yaw transformation of coordinates (Y coordinate)
-    TMPXCoord   = zeros(Float64, WindFarm.Y_Res, WindFarm.N); #For yaw transformation of coordinates (X coordinate)
+    TMPYCoord   = zeros(Float64, WindFarm.N, WindFarm.Y_Res); #For yaw transformation of coordinates (Y coordinate)
+    TMPXCoord   = zeros(Float64, WindFarm.N, WindFarm.Y_Res); #For yaw transformation of coordinates (X coordinate)
 
     #TMPZCoord   = zeros(Float64, WindFarm.RotorRes, 1, WindFarm.N); #For LHS distribution of Z coordinates
 
@@ -29,21 +29,26 @@ function initCompArrays(WindFarm)
 
 
     # Distribute the Y Coordinate 
-    TMPY_vector     = LinRange(-1.5, 1.5, WindFarm.Y_Res) 
+    TMPY_vector     = LinRange(-1.5, 1.5, WindFarm.Y_Res)' 
 
     
     for i in 1:WindFarm.N
     # Transform Y Coordinate according to yaw angle
-    TMPYCoord[:,i]  = 0 .* sin(Yaw_Comp[i]) .+ TMPY_vector .* cos(Yaw_Comp[i]);
-    TMPXCoord[:,i]  = 0 .* cos(Yaw_Comp[i]) .- TMPY_vector .* sin(Yaw_Comp[i]);
+    TMPYCoord[i,:]  = 0 .* sin(Yaw_Comp[i]) .+ TMPY_vector .* cos(Yaw_Comp[i]);
+    TMPXCoord[i,:]  = 0 .* cos(Yaw_Comp[i]) .- TMPY_vector .* sin(Yaw_Comp[i]);
     end
 
     for i in 1:WindFarm.N
     # Create coordinate array of the structure: 1.Dim: Relative turbine, 2.Dim: RotorPoints, 3.Dim: Absolute turbine
-    XCoordinate[:, :, 1, i] .= TMPXCoord' .+ WindFarm.x_vec .- WindFarm.x_vec[i];
-    YCoordinate[:, :, 1, i]  = TMPYCoord' .+ WindFarm.y_vec .- WindFarm.y_vec[i];
+    XCoordinate[:, :, 1, i] .= TMPXCoord .+ WindFarm.x_vec .- WindFarm.x_vec[i];
+    YCoordinate[:, :, 1, i] .= TMPYCoord .+ WindFarm.y_vec .- WindFarm.y_vec[i];
     end
+
+    if WindFarm.Z_Res==1
+    Z_Levels[1,1,:,1].=WindFarm.H;
+    else
     Z_Levels[1,1,:,1] = LinRange(0, WindFarm.Z_Max, WindFarm.Z_Res);
+    end
 
     # Transform with respect to wind direction
     TMPX = zeros(Float64, WindFarm.N, WindFarm.Y_Res)
@@ -114,7 +119,7 @@ function initCompArrays(WindFarm)
 
 end #initCompArrays
 
-function LoadTurbineDATA(WindFarm, CS)
+function LoadTurbineDATA!(WindFarm, CS)
 #= This function loads all turbine data necessary for the computation
  It returns an update WindFarm & CS struct with Thrust coefficient and power curve, turbine diameter & hubheight. 
 The ZCoordinate is also coorrected to have its origin at the Hubheigt of the turbine chosen for modelling. =#
@@ -147,11 +152,9 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
     else
         error("ERROR: Wrong choice of turbine model in", WindFarm.Name,"Make sure to choose one but not more.")
     end
-
-    return WindFarm, CS
 end #LoadTurbineDATA
 
-function LoadAtmosphericData(WindFarm,CS)
+function LoadAtmosphericData!(WindFarm,CS)
 #= This function loads all atmospheric data necessary for the computation
  It returns an updated WindFarm & CS struct with:
   1) Simple Computation: Wind & TI shear profile according to the height coordinates/ rotor resolution chosen by the user.
@@ -161,12 +164,10 @@ function LoadAtmosphericData(WindFarm,CS)
  WindFarm.u_ambient_zprofile=Array{Float64,4}(undef,1,1,WindFarm.Z_Res,1) #Assign right size to vector
 
  # Compute ambient velocity for each coordinate point according to wind shear profile
- WindFarm.u_ambient_zprofile .= ifelse.(CS.Z_Levels.>0, WindFarm.u_ambient .* log.(CS.Z_Levels.*WindFarm.D./WindFarm.z_Surf)./log.(WindFarm.z_r./WindFarm.z_Surf),0);
+ WindFarm.u_ambient_zprofile[1,1,:,1] .= ifelse.(CS.Z_Levels.>0, WindFarm.u_ambient .* log.(CS.Z_Levels.*WindFarm.D./WindFarm.z_Surf)./log.(WindFarm.z_r./WindFarm.z_Surf),0);
 
  # Compute TI profile
     #TBDone!
-
- return WindFarm, CS
 end #LoadAtmosphericData
 
 mutable struct ComputationStruct

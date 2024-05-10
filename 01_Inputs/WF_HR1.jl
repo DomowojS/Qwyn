@@ -36,9 +36,9 @@ userdata = OrderedDict{String, Any}(
     "Optim"         => false,
 
     ##########      (5) Numerical parameters   ######################
-    "Y_Res"     => 200, #Number of spanwise points used to distrectisize the turbine's rotors
+    "Y_Res"     => 100, #Number of spanwise points used to distrectisize the turbine's rotors
     "Z_Max"     => 2*80, #Maximum height
-    "Z_Res"     => 200,  #Number of height points to descritisise the rooms (number of height levels computed)
+    "Z_Res"     => 10,  #Number of height points to descritisise the rooms (number of height levels computed)
 
     ##########      (6) Graphical output       ######################
     "z" => 100,

@@ -42,8 +42,8 @@ for WindFarm in WF
 
     #Initialise all arrays & matrices needed for the computation.
     WindFarm, CS = initCompArrays(WindFarm)         #Initialises mutable struct "CA" which contains necessary computation arrays & computes coordinates acc. to user Input.
-    WindFarm, CS = LoadTurbineDATA(WindFarm, CS)    #Update Input & computation structs with provided power & thrust curves
-    WindFarm, CS = LoadAtmosphericData(WindFarm,CS) #Update Input & computation structs with atmospheric data (wind shear profile, wind rose etc.)
+    LoadTurbineDATA!(WindFarm, CS)    #Update Input & computation structs with provided power & thrust curves
+    LoadAtmosphericData!(WindFarm,CS) #Update Input & computation structs with atmospheric data (wind shear profile, wind rose etc.)
     
     #Compute single wake effect
     WindFarm,CS = Ishihara_WakeModel(WindFarm, CS)  #Compute wakes of single turbines
