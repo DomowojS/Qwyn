@@ -6,12 +6,12 @@ userdata = OrderedDict{String, Any}(
     # Name of the wind Farm
     "name" => "HR1",
     # Wind Farm Data
-    "N" => 200, #Number of turbines  
-    "x_vec" => LinRange(0,21,200),   #X-Coordinates
-    "y_vec" => zeros(200,),     #Y-Coordinates
+    "N" => 20, #Number of turbines  
+    "x_vec" => LinRange(0,21,20),   #X-Coordinates
+    "y_vec" => zeros(20,),     #Y-Coordinates
 
     ##########      (2) Turbine data           ######################
-    "Yaw" => 270 .+ zeros(200,), # Yaw angle of the turbines (In geographical DEG)
+    "Yaw" => 270 .+ zeros(20,), # Yaw angle of the turbines (In geographical DEG)
     #Turbine Type
     "VestasV80" => true,
     "NREL_5MW"  => false,
@@ -38,7 +38,7 @@ userdata = OrderedDict{String, Any}(
     ##########      (5) Numerical parameters   ######################
     "Y_Res"     => 100, #Number of spanwise points used to distrectisize the turbine's rotors
     "Z_Max"     => 2*80, #Maximum height
-    "Z_Res"     => 10,  #Number of height points to descritisise the rooms (number of height levels computed)
+    "Z_Res"     => 3,  #Number of height points to descritisise the rooms (number of height levels computed)
 
     ##########      (6) Graphical output       ######################
     "z" => 100,

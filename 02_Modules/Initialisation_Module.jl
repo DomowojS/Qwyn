@@ -135,8 +135,6 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
         Interp_P    =   LinearInterpolation(WindFarm.P_Input[:,1], WindFarm.P_Input[:,2]) #Interpolation function for P
         CS.Ct_vec   .=  Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
         CS.P_vec    .=  Interp_P(WindFarm.u_ambient);   #P of each turbine 
-
-        CS.Z_Levels .= CS.Z_Levels ./WindFarm.D;  #Adjust ZCoodinates for computation according to Hubheight
     elseif WindFarm.NREL_5MW==true && WindFarm.VestasV80==false
         WindFarm.D = 126;
         WindFarm.H = 90;
@@ -147,11 +145,11 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
         Interp_P    =   LinearInterpolation(WindFarm.P_Input[:,1], WindFarm.P_Input[:,2]) #Interpolation function for P
         CS.Ct_vec   .=  Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
         CS.P_vec    .=  Interp_P(WindFarm.u_ambient);   #P of each turbine
-        
-        CS.Z_Levels .= CS.Z_Levels .+ WindFarm.H./WindFarm.D;  #Adjust ZCoodinates for computation according to Hubheight 
     else
         error("ERROR: Wrong choice of turbine model in", WindFarm.Name,"Make sure to choose one but not more.")
     end
+    #Adjust ZCoodinates for computation according to Hubheight
+    CS.Z_Levels .= CS.Z_Levels .+ WindFarm.H;  
 end #LoadTurbineDATA
 
 function LoadAtmosphericData!(WindFarm,CS)
@@ -161,10 +159,12 @@ function LoadAtmosphericData!(WindFarm,CS)
   2) AEP Computation: TBD
 =#
  println("loading atmospheric data..")
- WindFarm.u_ambient_zprofile=Array{Float64,4}(undef,1,1,WindFarm.Z_Res,1) #Assign right size to vector
+ #WindFarm.u_ambient_zprofile=Array{Float64,4}(undef,1,1,WindFarm.Z_Res,1) 
+ WindFarm.u_ambient_zprofile=zeros(1,1,WindFarm.Z_Res,1)#Assign right size to vector
 
- # Compute ambient velocity for each coordinate point according to wind shear profile
- WindFarm.u_ambient_zprofile[1,1,:,1] .= ifelse.(CS.Z_Levels.>0, WindFarm.u_ambient .* log.(CS.Z_Levels.*WindFarm.D./WindFarm.z_Surf)./log.(WindFarm.z_r./WindFarm.z_Surf),0);
+ # Compute the ambient velocity log profile only for positive Z_Levels
+ positive_indices = findall(CS.Z_Levels.-WindFarm.H .> 0) # Find indices where Z_Levels are positive
+ WindFarm.u_ambient_zprofile[positive_indices] .= WindFarm.u_ambient .* log.((CS.Z_Levels[positive_indices].-WindFarm.H) ./ WindFarm.z_Surf) ./ log.(WindFarm.z_r / WindFarm.z_Surf)
 
  # Compute TI profile
     #TBDone!
