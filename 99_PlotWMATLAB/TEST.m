@@ -14,7 +14,7 @@ u=zeros(1,Z_Res);
 
 for i=1:Z_Res
 u(i)=u_ambient_zprofile(i);
-z(i)=Z_Levels(i)*D/H;
+z(i)=Z_Levels(i)/H;
 end
 
 figure(1)
@@ -77,7 +77,7 @@ colormap(inferno)
 title(["Crossection in Z/X plane at Y=",num2str(YCoordinates(1,CrossPoint,1,1)),"H. Resulting speed."])
 view([0,0,2])
 xlabel("x/D")
-ylabel("z/D")
+ylabel("z/H")
 col=colorbar;
 ylabel(col,'u_{wake}')
 clim([0, u_ambient]);
@@ -86,6 +86,6 @@ figure(6)
 plot(u_tot(AxialPoint,:),z(AxialPoint,:))
 title(["Wind velocity in Crossection in Z/X plane at Y=",num2str(YCoordinates(1,CrossPoint,1,1)),"H. At axial distance from turbine",num2str(x(AxialPoint,1)),"."])
 xlabel("u_{wake}")
-ylabel("z/D")
+ylabel("z/H")
 xlim([0,max(u_tot(AxialPoint,:))])
 ylim([0,max(z(AxialPoint,:))])

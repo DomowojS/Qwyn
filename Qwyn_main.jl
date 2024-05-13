@@ -46,7 +46,7 @@ for WindFarm in WF
     LoadAtmosphericData!(WindFarm,CS) #Update Input & computation structs with atmospheric data (wind shear profile, wind rose etc.)
     
     #Compute single wake effect
-    WindFarm,CS = Ishihara_WakeModel(WindFarm, CS)  #Compute wakes of single turbines
+    Ishihara_WakeModel!(WindFarm, CS)  #Compute wakes of single turbines
 
     global CD = CS
 end

@@ -44,9 +44,7 @@ function initCompArrays(WindFarm)
     YCoordinate[:, :, 1, i] .= TMPYCoord .+ WindFarm.y_vec .- WindFarm.y_vec[i];
     end
 
-    if WindFarm.Z_Res==1
-    Z_Levels[1,1,:,1].=WindFarm.H;
-    else
+    if WindFarm.Z_Res>1
     Z_Levels[1,1,:,1] = LinRange(0, WindFarm.Z_Max, WindFarm.Z_Res);
     end
 
@@ -148,8 +146,11 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
     else
         error("ERROR: Wrong choice of turbine model in", WindFarm.Name,"Make sure to choose one but not more.")
     end
-    #Adjust ZCoodinates for computation according to Hubheight
-    CS.Z_Levels .= CS.Z_Levels .+ WindFarm.H;  
+
+    # If onluy two dimensional computation is conducted -> assign Z-Level to Hubheight
+    if WindFarm.Z_Res==1
+        CS.Z_Levels[1,1,:,1].=WindFarm.H;
+    end
 end #LoadTurbineDATA
 
 function LoadAtmosphericData!(WindFarm,CS)
@@ -164,7 +165,7 @@ function LoadAtmosphericData!(WindFarm,CS)
 
  # Compute the ambient velocity log profile only for positive Z_Levels
  positive_indices = findall(CS.Z_Levels.-WindFarm.H .> 0) # Find indices where Z_Levels are positive
- WindFarm.u_ambient_zprofile[positive_indices] .= WindFarm.u_ambient .* log.((CS.Z_Levels[positive_indices].-WindFarm.H) ./ WindFarm.z_Surf) ./ log.(WindFarm.z_r / WindFarm.z_Surf)
+ WindFarm.u_ambient_zprofile[positive_indices] .= WindFarm.u_ambient .* log.(CS.Z_Levels[positive_indices] ./ WindFarm.z_Surf) ./ log.(WindFarm.z_r / WindFarm.z_Surf)
 
  # Compute TI profile
     #TBDone!

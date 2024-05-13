@@ -13,40 +13,40 @@ using Revise
 #using PlotlyJS
 using MAT
 using LinearAlgebra
-export Ishihara_WakeModel
+export Ishihara_WakeModel!
 
-function Ishihara_WakeModel(WindFarm, CS)
+function Ishihara_WakeModel!(WindFarm, CS)
     println("computing single wake..")
     println("..computing empirical values..")
     CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f = ComputeEmpiricalVars(CS.Ct_vec, WindFarm.TI_a, 
                                                             CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f); # Compute empirical values
     println("..computing r..")
-    CS.r = sqrt.((CS.YCoordinates.*WindFarm.D).^2 .+ ((CS.Z_Levels.*WindFarm.D).-WindFarm.H).^2) # Compute vector in radial & height direction for computation
+    CS.r = sqrt.((CS.YCoordinates.*WindFarm.D).^2 .+ (CS.Z_Levels.-WindFarm.H).^2) # Compute vector in radial & height direction for computation
 
     # Representative wake width (sigma(x))
     println("..computing sigma..")
-    CS.sigma    =   ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), (CS.k .* CS.XCoordinates .+ CS.epsilon) .* WindFarm.D, 0); # Compute wake width of all turbines
+    CS.sigma .= ((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20)) .* (CS.k .* CS.XCoordinates .+ CS.epsilon) .* WindFarm.D; # Compute wake width of all turbines
+    
     # Velocity deficit
     println("..computing velocity deficit..")
-    CS.Delta_U   =  ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), (1 ./ (CS.a .+ CS.b .* CS.XCoordinates .+ CS.c .* (1 .+ CS.XCoordinates).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.u_0_vec, 0);# Compute velocity deficit
+    CS.Delta_U   =  ((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20)) .* ((1 ./ (CS.a .+ CS.b .* CS.XCoordinates .+ CS.c .* (1 .+ CS.XCoordinates).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.u_0_vec);# Compute velocity deficit
     
     #Rotor-added turbulence
     println("..computing turbulence empirical values..")
     #Include turbulence computation
-    CS.k1       =   ifelse.(CS.r .<= 0.5 * WindFarm.D, (cos.(pi./2 .* (CS.r./WindFarm.D .- 0.5))).^2, 1);
-    CS.k2       =   ifelse.(CS.r .<= 0.5 * WindFarm.D, (cos.(pi./2 .* (CS.r./WindFarm.D .+ 0.5))).^2, 0);
-    CS.delta    =   ifelse.(CS.Z_Levels.*WindFarm.D .< WindFarm.H, WindFarm.TI_a .* (sin.(pi .* (WindFarm.H .- (CS.Z_Levels.*WindFarm.D))./WindFarm.H)).^2, 0);
+    CS.k1       =   (1 .- (CS.r .<= 0.5 * WindFarm.D)) .+ (CS.r .<= 0.5 * WindFarm.D) .* ((cos.(pi./2 .* (CS.r./WindFarm.D .- 0.5))).^2);
+    CS.k2       =   (CS.r .<= 0.5 * WindFarm.D) .* ((cos.(pi./2 .* (CS.r./WindFarm.D .+ 0.5))).^2);
+    CS.delta    =   (CS.Z_Levels .< WindFarm.H) .* (WindFarm.TI_a .* (sin.(pi .* (WindFarm.H .- (CS.Z_Levels))./WindFarm.H)).^2);
 
     println("..computing rotor-added turbulence..")
-    CS.Delta_TI =   ifelse.((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20), ((1 ./ (CS.d .+ CS.e .* CS.XCoordinates .+ CS.f .* (1 .+ CS.XCoordinates).^-2)) .* 
-                            (CS.k1 .* exp.(-(CS.r .- 0.5.*WindFarm.D).^2 ./(2 .* (CS.sigma).^2)) .+ CS.k2 .* exp.(-(CS.r .+ 0.5.*WindFarm.D).^2 ./(2 .* (CS.sigma).^2)))) .- CS.delta,
-                            0);# Compute rotor-added turbulence
+    CS.Delta_TI =   ((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20)) .* (((1 ./ (CS.d .+ CS.e .* CS.XCoordinates .+ CS.f .* (1 .+ CS.XCoordinates).^-2)) .* 
+                            (CS.k1 .* exp.(-(CS.r .- 0.5.*WindFarm.D).^2 ./ (2 .* (CS.sigma).^2)) .+ CS.k2 .* exp.(-(CS.r .+ 0.5.*WindFarm.D).^2 ./(2 .* (CS.sigma).^2)))) .- CS.delta);# Compute rotor-added turbulence
     
 
     println("..single wake computation finished!")
-                            
-                            #
+                        
 # Convert the struct to a dictionary
+#
 struct_dict = Dict{String, Any}(string.(propertynames(CS)) .=> getfield.(Ref(CS), propertynames(CS)))
 struct_dict2 = Dict{String, Any}(string.(propertynames(WindFarm)) .=> getfield.(Ref(WindFarm), propertynames(WindFarm)))
 
@@ -56,8 +56,7 @@ filename2 = "99_PlotWMATLAB/WindFarmWF_CheckNewCoordinates.mat"
 # Save the struct to the .mat file
 matwrite(filename, struct_dict)
 matwrite(filename2, struct_dict2)
-
-    return WindFarm, CS
+#
 end
 #
 
