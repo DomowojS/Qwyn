@@ -21,25 +21,27 @@ function Ishihara_WakeModel!(WindFarm, CS)
     CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f = ComputeEmpiricalVars(CS.Ct_vec, WindFarm.TI_a, 
                                                             CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f); # Compute empirical values
     println("..computing r..")
-    CS.r = sqrt.((CS.YCoordinates.*WindFarm.D).^2 .+ (CS.Z_Levels.-WindFarm.H).^2) # Compute vector in radial & height direction for computation
+    CS.r        .= sqrt.((CS.YCoordinates.*WindFarm.D).^2 .+ (CS.Z_Levels.-WindFarm.H).^2) # Compute vector in radial & height direction for computation
+
+    CS.Computation_Region_ID = (CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20) # Limit computation domain to reasonable scope
 
     # Representative wake width (sigma(x))
     println("..computing sigma..")
-    CS.sigma .= ((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20)) .* (CS.k .* CS.XCoordinates .+ CS.epsilon) .* WindFarm.D; # Compute wake width of all turbines
+    CS.sigma    .= CS.Computation_Region_ID .* (CS.k .* CS.XCoordinates .+ CS.epsilon) .* WindFarm.D; # Compute wake width of all turbines
     
     # Velocity deficit
     println("..computing velocity deficit..")
-    CS.Delta_U   =  ((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20)) .* ((1 ./ (CS.a .+ CS.b .* CS.XCoordinates .+ CS.c .* (1 .+ CS.XCoordinates).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.u_0_vec);# Compute velocity deficit
+    CS.Delta_U  .=  CS.Computation_Region_ID .* ((1 ./ (CS.a .+ CS.b .* CS.XCoordinates .+ CS.c .* (1 .+ CS.XCoordinates).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.u_0_vec);# Compute velocity deficit
     
     #Rotor-added turbulence
     println("..computing turbulence empirical values..")
     #Include turbulence computation
-    CS.k1       =   (1 .- (CS.r .<= 0.5 * WindFarm.D)) .+ (CS.r .<= 0.5 * WindFarm.D) .* ((cos.(pi./2 .* (CS.r./WindFarm.D .- 0.5))).^2);
-    CS.k2       =   (CS.r .<= 0.5 * WindFarm.D) .* ((cos.(pi./2 .* (CS.r./WindFarm.D .+ 0.5))).^2);
-    CS.delta    =   (CS.Z_Levels .< WindFarm.H) .* (WindFarm.TI_a .* (sin.(pi .* (WindFarm.H .- (CS.Z_Levels))./WindFarm.H)).^2);
+    CS.k1       .=   (1 .- (CS.r .<= 0.5 * WindFarm.D)) .+ (CS.r .<= 0.5 * WindFarm.D) .* ((cos.(pi./2 .* (CS.r./WindFarm.D .- 0.5))).^2);
+    CS.k2       .=   (CS.r .<= 0.5 * WindFarm.D) .* ((cos.(pi./2 .* (CS.r./WindFarm.D .+ 0.5))).^2);
+    CS.delta    .=   (CS.Z_Levels .< WindFarm.H) .* (WindFarm.TI_a .* (sin.(pi .* (WindFarm.H .- (CS.Z_Levels))./WindFarm.H)).^2);
 
     println("..computing rotor-added turbulence..")
-    CS.Delta_TI =   ((CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20)) .* (((1 ./ (CS.d .+ CS.e .* CS.XCoordinates .+ CS.f .* (1 .+ CS.XCoordinates).^-2)) .* 
+    CS.Delta_TI .=   CS.Computation_Region_ID .* (((1 ./ (CS.d .+ CS.e .* CS.XCoordinates .+ CS.f .* (1 .+ CS.XCoordinates).^-2)) .* 
                             (CS.k1 .* exp.(-(CS.r .- 0.5.*WindFarm.D).^2 ./ (2 .* (CS.sigma).^2)) .+ CS.k2 .* exp.(-(CS.r .+ 0.5.*WindFarm.D).^2 ./(2 .* (CS.sigma).^2)))) .- CS.delta);# Compute rotor-added turbulence
     
 

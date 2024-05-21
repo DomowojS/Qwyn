@@ -29,7 +29,7 @@ function initCompArrays(WindFarm)
 
 
     # Distribute the Y Coordinate 
-    TMPY_vector     = LinRange(-1.5, 1.5, WindFarm.Y_Res)' 
+    TMPY_vector     = LinRange(-0.5, 0.5, WindFarm.Y_Res)' 
 
     
     for i in 1:WindFarm.N
@@ -109,8 +109,9 @@ function initCompArrays(WindFarm)
     CS=ComputationStruct(   XCoordinate, YCoordinate, Z_Levels, zeros(WindFarm.N , WindFarm.Y_Res, WindFarm.Z_Res, WindFarm.N), alpha_Comp, Yaw_Comp,
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), (zeros(1,1,1,WindFarm.N) .+ WindFarm.u_ambient), 
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), 
-                            zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(size(XCoordinate)), zeros(size(XCoordinate)), 
-                            zeros(size(XCoordinate)), zeros(size(XCoordinate)), zeros(size(XCoordinate)), zeros(size(XCoordinate))
+                            zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), 
+                            zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), zeros(1,1,WindFarm.Z_Res,1), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N),
+                            similar(XCoordinate, Bool)
                         )
  
     return WindFarm, CS
@@ -164,8 +165,7 @@ function LoadAtmosphericData!(WindFarm,CS)
  WindFarm.u_ambient_zprofile=zeros(1,1,WindFarm.Z_Res,1)#Assign right size to vector
 
  # Compute the ambient velocity log profile only for positive Z_Levels
- positive_indices = findall(CS.Z_Levels.-WindFarm.H .> 0) # Find indices where Z_Levels are positive
- WindFarm.u_ambient_zprofile[positive_indices] .= WindFarm.u_ambient .* log.(CS.Z_Levels[positive_indices] ./ WindFarm.z_Surf) ./ log.(WindFarm.z_r / WindFarm.z_Surf)
+ WindFarm.u_ambient_zprofile .= (CS.Z_Levels .> 0) .* (WindFarm.u_ambient .* log.(CS.Z_Levels ./ WindFarm.z_Surf) ./ log.(WindFarm.z_r / WindFarm.z_Surf))
 
  # Compute TI profile
     #TBDone!
@@ -201,6 +201,7 @@ mutable struct ComputationStruct
     k2::Array{Float64,4};       #Parameter for turbulence computation
     delta::Array{Float64,4};    #Parameter for turbulence computation
     Delta_TI::Array{Float64,4}; #Rotor-added turbulence
+    Computation_Region_ID::Array{Bool,4}; #ID for limiting computation of the wake region
 
 end #mutable struct "ComputationStruct"
 
