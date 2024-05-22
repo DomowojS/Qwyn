@@ -6,12 +6,12 @@ userdata = OrderedDict{String, Any}(
     # Name of the wind Farm
     "name" => "HR1",
     # Wind Farm Data
-    "N" => 80, #Number of turbines  
-    "x_vec" => LinRange(0,21,80),   #X-Coordinates
-    "y_vec" => zeros(80,),     #Y-Coordinates
+    "N" => 3, #Number of turbines  
+    "x_vec" => [0, 7, 14],   #X-Coordinates
+    "y_vec" => [0, 0, 0],     #Y-Coordinates
 
     ##########      (2) Turbine data           ######################
-    "Yaw" => 270 .+ zeros(80,), # Yaw angle of the turbines (In geographical DEG)
+    "Yaw" => 270 .+ zeros(3,), # Yaw angle of the turbines (In geographical DEG)
     #Turbine Type
     "VestasV80" => true,
     "NREL_5MW"  => false,
@@ -31,14 +31,17 @@ userdata = OrderedDict{String, Any}(
     "Wind_rose" => 3.14159999, # Get wind rose as specified in "04_Ambient_data"
 
     ##########      (4) Computational setting  ######################
-    "SimpleComp"    => true,
-    "AEPComp"       => false,
-    "Optim"         => false,
+    "SimpleComp"        => true,    # For the computation of one case 
+    "AEPComp"           => false,   # For the estimation of the farms AEP
+    ## Advanced settings:
+    #Superposition Method
+    "Linear_Rotorbased"     => true,   # Superposition using linear rotorbased summation for velocity deficit
+    "Momentum_Conserving"   => false,  # Superposition using momentum conserving approach for velocity deficit
 
     ##########      (5) Numerical parameters   ######################
     "Y_Res"     => 100, #Number of spanwise points used to distrectisize the turbine's rotors
     "Z_Max"     => 1.5*80, #Maximum height
-    "Z_Res"     => 1,  #Number of height points to descritisise the rooms (number of height levels computed)
+    "Z_Res"     => 10,  #Number of height points to descritisise the rooms (number of height levels computed)
 
     ##########      (6) Graphical output       ######################
     "z" => 100,

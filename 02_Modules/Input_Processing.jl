@@ -69,9 +69,12 @@ mutable struct Windfarm
         Wind_rose::Float64; # Get wind rose as specified in "04_Ambient_data"
     
     ##########      (4) Computational setting  ######################
-        SimpleComp::Bool;
-        AEPComp::Bool;
-        Optimisation::Bool;
+        SimpleComp::Bool;           # For the computation of one case
+        AEPComp::Bool;              # For the estimation of the farms AEP
+    ## Advanced settings:
+    #Superposition Method
+        Linear_Rotorbased::Bool;    # Superposition using linear rotorbased summation for velocity deficit
+        Momentum_Conserving::Bool;  # Superposition using momentum conserving approach for velocity deficit
     ##########      (5) Numerical parameters   ######################
         Y_Res::Int;
         Z_Max::Float64; #Maximum height

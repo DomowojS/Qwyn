@@ -107,11 +107,11 @@ function initCompArrays(WindFarm)
 #End Plot   =# 
 
     CS=ComputationStruct(   XCoordinate, YCoordinate, Z_Levels, zeros(WindFarm.N , WindFarm.Y_Res, WindFarm.Z_Res, WindFarm.N), alpha_Comp, Yaw_Comp,
-                            zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), (zeros(1,1,1,WindFarm.N) .+ WindFarm.u_ambient), 
+                            zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), (zeros(1,1,1,WindFarm.N) .+ WindFarm.u_ambient), (zeros(1,1,1,WindFarm.N) .+ WindFarm.TI_a),
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), 
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), 
                             zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), zeros(1,1,WindFarm.Z_Res,1), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N),
-                            similar(XCoordinate, Bool)
+                            similar(XCoordinate, Bool), zeros(WindFarm.N , WindFarm.Y_Res, WindFarm.Z_Res, 1), zeros(WindFarm.N , WindFarm.Y_Res, WindFarm.Z_Res, 1)
                         )
  
     return WindFarm, CS
@@ -184,7 +184,8 @@ mutable struct ComputationStruct
     Yaw_Comp::Vector{Float64};  #Yawangle of each turbine
     Ct_vec::Array{Float64,4};    #Ct of each turbine
     P_vec::Array{Float64,4};     #P of each turbine 
-    u_0_vec::Array{Float64,4};   #Inflow velocity of each turbine  
+    u_0_vec::Array{Float64,4};   #Inflow velocity of each turbine (Hubheight)
+    TI_0_vec::Array{Float64,4};  #Inflow turbulence intensity of each turbine (Hubheight)
     # Empirical values needed for Ishihara wake model
     k::Array{Float64,4};
     epsilon::Array{Float64,4};
@@ -202,7 +203,9 @@ mutable struct ComputationStruct
     delta::Array{Float64,4};    #Parameter for turbulence computation
     Delta_TI::Array{Float64,4}; #Rotor-added turbulence
     Computation_Region_ID::Array{Bool,4}; #ID for limiting computation of the wake region
-
+    #Arrays needed to superimpose
+    U_Farm::Array{Float64,4};
+    TI_Farm::Array{Float64,4};
 end #mutable struct "ComputationStruct"
 
 end #Module

@@ -49,6 +49,10 @@ for WindFarm in WF
     #Compute single wake effect
     Ishihara_WakeModel!(WindFarm, CS)  #Compute wakes of single turbines
     tock()
+    tick()
+    #Compute mixed wake
+    Superposition!(WindFarm, CS)
+    tock()
     global CD = CS
 end
 println("This was a Test")

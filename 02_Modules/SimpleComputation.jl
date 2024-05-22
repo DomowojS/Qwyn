@@ -13,8 +13,9 @@ using Revise
 #using PlotlyJS
 using MAT
 using LinearAlgebra
-export Ishihara_WakeModel!
+export Ishihara_WakeModel!, Superposition!
 
+# Compute single wake
 function Ishihara_WakeModel!(WindFarm, CS)
     println("computing single wake..")
     println("..computing empirical values..")
@@ -46,20 +47,7 @@ function Ishihara_WakeModel!(WindFarm, CS)
     
 
     println("..single wake computation finished!")
-                        
-# Convert the struct to a dictionary
-#
-struct_dict = Dict{String, Any}(string.(propertynames(CS)) .=> getfield.(Ref(CS), propertynames(CS)))
-struct_dict2 = Dict{String, Any}(string.(propertynames(WindFarm)) .=> getfield.(Ref(WindFarm), propertynames(WindFarm)))
-
-# Specify the filename for the .mat file
-filename = "99_PlotWMATLAB/WindFarmCS_CheckNewCoordinates.mat"
-filename2 = "99_PlotWMATLAB/WindFarmWF_CheckNewCoordinates.mat"
-# Save the struct to the .mat file
-matwrite(filename, struct_dict)
-matwrite(filename2, struct_dict2)
-#
-end
+end #Ishihara_Wakemodel
 #
 
 function ComputeEmpiricalVars(Ct, TI_a, k, epsilon, a, b, c, d, e, f)
@@ -72,8 +60,41 @@ function ComputeEmpiricalVars(Ct, TI_a, k, epsilon, a, b, c, d, e, f)
     e       .= 1.0               .* TI_a^0.1
     f       .= 0.7  .* Ct.^-3.2  .* TI_a^-0.45
     return k, epsilon, a, b, c, d, e, f
-end
-# Compute single wake
+end#ComputeEmpiricalVars
+
+function Superposition!(WindFarm, CS)
+
+    if WindFarm.Linear_Rotorbased == true
+        println("computing mixed wake region..")
+        #Velocity deficit
+        println("..computing velocity deficit..")
+        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sqrt.(sum(CS.Delta_U.^2, dims=4)); 
+        
+        #Rotor-added turbulence
+        ### IMPLEMENT Height Profile for TI_a -> (WindFarm.TI_a.*WindFarm.u_ambient).^2 needs to be height related and ./WindFarm.u_ambient;, too!
+        println("..computing rotor-added turbulence..")
+        CS.TI_Farm .= sqrt.((WindFarm.TI_a.*WindFarm.u_ambient).^2 .+ sum((CS.Delta_TI.*CS.u_0_vec).^2, dims=4))./WindFarm.u_ambient;
+
+    elseif WindFarm.Momentum_Conserving == true
+        CS.U_Farm .= CS.Delta_U;
+    end
+
+println("..mixed wake computation finished!")
+
+# Convert the struct to a dictionary
+struct_dict = Dict{String, Any}(string.(propertynames(CS)) .=> getfield.(Ref(CS), propertynames(CS)))
+struct_dict2 = Dict{String, Any}(string.(propertynames(WindFarm)) .=> getfield.(Ref(WindFarm), propertynames(WindFarm)))
+
+# Specify the filename for the .mat file
+filename = "99_PlotWMATLAB/WindFarmCS.mat"
+filename2 = "99_PlotWMATLAB/WindFarmWF.mat"
+# Save the struct to the .mat file
+matwrite(filename, struct_dict)
+matwrite(filename2, struct_dict2)
+
+
+
+end#Superposition
 
 # Compute mixed wake 
 
