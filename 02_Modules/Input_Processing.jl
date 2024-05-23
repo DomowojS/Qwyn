@@ -69,11 +69,16 @@ mutable struct Windfarm
         Wind_rose::Float64; # Get wind rose as specified in "04_Ambient_data"
     
     ##########      (4) Computational setting  ######################
-        SimpleComp::Bool;
-        AEPComp::Bool;
-        Optimisation::Bool;
+        SimpleComp::Bool;           # For the computation of one case
+        AEPComp::Bool;              # For the estimation of the farms AEP
+    ## Advanced settings:
+    #Superposition Method
+        Linear_Rotorbased::Bool;    # Superposition using linear rotorbased summation for velocity deficit
+        Momentum_Conserving::Bool;  # Superposition using momentum conserving approach for velocity deficit
     ##########      (5) Numerical parameters   ######################
-        RotorRes::Int;
+        Y_Res::Int;
+        Z_Max::Float64; #Maximum height
+        Z_Res::Int;     #Height resolution (number of height levels computed)
     ##########      (6) Graphical output       ######################
         z::Int;
     ##########   Literature Input              ######################
@@ -82,7 +87,7 @@ mutable struct Windfarm
         P_Input::Matrix{Float64};    # Power coefficient - defined as .txt in "03_Turbine_Data"
         Ct_Input::Matrix{Float64};    # Thrust coefficient - defined as .txt in "03_Turbine_data"
         #Atmospheric data placeholders:
-        u_ambient_zprofile::Array{Float64,3}; # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
+        u_ambient_zprofile::Array{Float64,4}; # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
 end # mutable struct Windfarm
 
 end #module
