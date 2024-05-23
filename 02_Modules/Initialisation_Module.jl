@@ -44,10 +44,6 @@ function initCompArrays(WindFarm)
     YCoordinate[:, :, 1, i] .= TMPYCoord .+ WindFarm.y_vec .- WindFarm.y_vec[i];
     end
 
-    if WindFarm.Z_Res>1
-    Z_Levels[1,1,:,1] = LinRange(0, WindFarm.Z_Max, WindFarm.Z_Res);
-    end
-
     # Transform with respect to wind direction
     TMPX = zeros(Float64, WindFarm.N, WindFarm.Y_Res)
     for i in 1:WindFarm.N
@@ -107,11 +103,11 @@ function initCompArrays(WindFarm)
 #End Plot   =# 
 
     CS=ComputationStruct(   XCoordinate, YCoordinate, Z_Levels, zeros(WindFarm.N , WindFarm.Y_Res, WindFarm.Z_Res, WindFarm.N), alpha_Comp, Yaw_Comp,
-                            zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), (zeros(1,1,1,WindFarm.N) .+ WindFarm.u_ambient), (zeros(1,1,1,WindFarm.N) .+ WindFarm.TI_a),
+                            zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), (zeros(1,1,1,WindFarm.N) .+ WindFarm.u_ambient), zeros(1,1,1,WindFarm.N), (zeros(1,1,1,WindFarm.N) .+ WindFarm.TI_a),
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), 
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), 
                             zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), zeros(1,1,WindFarm.Z_Res,1), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N),
-                            similar(XCoordinate, Bool), zeros(WindFarm.N , WindFarm.Y_Res, WindFarm.Z_Res, 1), zeros(WindFarm.N , WindFarm.Y_Res, WindFarm.Z_Res, 1)
+                            similar(XCoordinate, Bool), zeros(WindFarm.N , WindFarm.Y_Res, WindFarm.Z_Res, 1), zeros(WindFarm.N , WindFarm.Y_Res, WindFarm.Z_Res, 1), 100
                         )
  
     return WindFarm, CS
@@ -151,6 +147,10 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
     # If onluy two dimensional computation is conducted -> assign Z-Level to Hubheight
     if WindFarm.Z_Res==1
         CS.Z_Levels[1,1,:,1].=WindFarm.H;
+    elseif WindFarm.Z_Res>1
+        CS.Z_Levels[1,1,:,1] = LinRange(WindFarm.H - WindFarm.D/2, WindFarm.H + WindFarm.D/2, WindFarm.Z_Res);
+    else
+        error("EROOR: a lower height resolution of Z_Res=1 not supported!")
     end
 end #LoadTurbineDATA
 
@@ -181,10 +181,11 @@ mutable struct ComputationStruct
     # Ambient data
     alpha_Comp::Float64;
     # Turbine specifics
-    Yaw_Comp::Vector{Float64};  #Yawangle of each turbine
-    Ct_vec::Array{Float64,4};    #Ct of each turbine
-    P_vec::Array{Float64,4};     #P of each turbine 
-    u_0_vec::Array{Float64,4};   #Inflow velocity of each turbine (Hubheight)
+    Yaw_Comp::Vector{Float64};      #Yawangle of each turbine
+    Ct_vec::Array{Float64,4};       #Ct of each turbine
+    P_vec::Array{Float64,4};        #P of each turbine 
+    u_0_vec::Array{Float64,4};      #Inflow velocity of each turbine (Hubheight)
+    u_0_vec_old::Array{Float64,4};  #Old Inflow velocity from last iteration 
     TI_0_vec::Array{Float64,4};  #Inflow turbulence intensity of each turbine (Hubheight)
     # Empirical values needed for Ishihara wake model
     k::Array{Float64,4};
@@ -206,6 +207,8 @@ mutable struct ComputationStruct
     #Arrays needed to superimpose
     U_Farm::Array{Float64,4};
     TI_Farm::Array{Float64,4};
+    #Computation Parameters
+    zeta::Float64 # termination criterion
 end #mutable struct "ComputationStruct"
 
 end #Module

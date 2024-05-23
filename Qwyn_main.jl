@@ -52,6 +52,8 @@ for WindFarm in WF
     tick()
     #Compute mixed wake
     Superposition!(WindFarm, CS)
+    #Evaluate new inflow data
+    getTurbineInflow!(WindFarm, CS) 
     tock()
     global CD = CS
 end

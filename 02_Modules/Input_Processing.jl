@@ -77,10 +77,11 @@ mutable struct Windfarm
         Momentum_Conserving::Bool;  # Superposition using momentum conserving approach for velocity deficit
     ##########      (5) Numerical parameters   ######################
         Y_Res::Int;
-        Z_Max::Float64; #Maximum height
         Z_Res::Int;     #Height resolution (number of height levels computed)
     ##########      (6) Graphical output       ######################
         z::Int;
+        Z_Max::Float64; #Maximum height
+        Z_Min::Float64; #Minimum height
     ##########   Literature Input              ######################
         D::Float64;             # Turbine diameter in [m]
         H::Float64;             # Hub height in [m]

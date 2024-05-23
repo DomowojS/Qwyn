@@ -6,12 +6,12 @@ userdata = OrderedDict{String, Any}(
     # Name of the wind Farm
     "name" => "HR1",
     # Wind Farm Data
-    "N" => 3, #Number of turbines  
-    "x_vec" => [0, 7, 14],   #X-Coordinates
-    "y_vec" => [0, 0, 0],     #Y-Coordinates
+    "N" => 80, #Number of turbines  
+    "x_vec" => LinRange(0,21,80), #[0, 7, 14],   #X-Coordinates
+    "y_vec" => zeros(80,),     #Y-Coordinates
 
     ##########      (2) Turbine data           ######################
-    "Yaw" => 270 .+ zeros(3,), # Yaw angle of the turbines (In geographical DEG)
+    "Yaw" => 270 .+ zeros(80,), # Yaw angle of the turbines (In geographical DEG)
     #Turbine Type
     "VestasV80" => true,
     "NREL_5MW"  => false,
@@ -39,13 +39,13 @@ userdata = OrderedDict{String, Any}(
     "Momentum_Conserving"   => false,  # Superposition using momentum conserving approach for velocity deficit
 
     ##########      (5) Numerical parameters   ######################
-    "Y_Res"     => 100, #Number of spanwise points used to distrectisize the turbine's rotors
-    "Z_Max"     => 1.5*80, #Maximum height
-    "Z_Res"     => 10,  #Number of height points to descritisise the rooms (number of height levels computed)
+    "Y_Res"     => 100,     #Number of spanwise points used to distrectisize the turbine's rotors
+    "Z_Res"     => 10,      #Number of height points to descritisise the rooms (number of height levels computed)
 
     ##########      (6) Graphical output       ######################
     "z" => 100,
-
+    "Z_Max"     => 1.5*80,  #Maximum height
+    "Z_Min"     => 0,       #Minimum height
     ##########   Literature Input              ######################
     #= These Numbers are placeholders. They overwritten by data from literature.
     You can provide this as .jld2 file for turbine & atmospheric data.

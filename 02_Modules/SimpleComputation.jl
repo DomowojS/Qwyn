@@ -13,7 +13,8 @@ using Revise
 #using PlotlyJS
 using MAT
 using LinearAlgebra
-export Ishihara_WakeModel!, Superposition!
+using Statistics
+export Ishihara_WakeModel!, Superposition!, getTurbineInflow!
 
 # Compute single wake
 function Ishihara_WakeModel!(WindFarm, CS)
@@ -62,6 +63,7 @@ function ComputeEmpiricalVars(Ct, TI_a, k, epsilon, a, b, c, d, e, f)
     return k, epsilon, a, b, c, d, e, f
 end#ComputeEmpiricalVars
 
+# Compute mixed wake properties
 function Superposition!(WindFarm, CS)
 
     if WindFarm.Linear_Rotorbased == true
@@ -69,7 +71,8 @@ function Superposition!(WindFarm, CS)
         #Velocity deficit
         println("..computing velocity deficit..")
         CS.U_Farm .= WindFarm.u_ambient_zprofile .- sqrt.(sum(CS.Delta_U.^2, dims=4)); 
-        
+        CS.U_Farm[CS.U_Farm.<0].=0 #Filter of "negative" wind speeds in low heights
+
         #Rotor-added turbulence
         ### IMPLEMENT Height Profile for TI_a -> (WindFarm.TI_a.*WindFarm.u_ambient).^2 needs to be height related and ./WindFarm.u_ambient;, too!
         println("..computing rotor-added turbulence..")
@@ -79,26 +82,32 @@ function Superposition!(WindFarm, CS)
         CS.U_Farm .= CS.Delta_U;
     end
 
-println("..mixed wake computation finished!")
+ println("..mixed wake computation finished!")
+end#Superposition
 
+#Evaluate new inflow data
+function getTurbineInflow!(WindFarm, CS) 
+    println("Reevaluating inflow parameter..")
+    # Update inflow parameter
+    CS.u_0_vec_old .= CS.u_0_vec #Store old inflow data
+    CS.u_0_vec .= reshape(mean(mean(CS.U_Farm, dims=3), dims=2), (1,1,1,WindFarm.N))    #Compute mean inflow velocity for each turbine
+    CS.TI_0_vec .= reshape(mean(mean(CS.TI_Farm, dims=3), dims=2), (1,1,1,WindFarm.N))  #Compute mean Turbulence intensity for each turbine
+
+    # Compute termination criterion
+    CS.zeta = findmax(abs.(CS.u_0_vec.-CS.u_0_vec_old))[1]
+    println("finished reevaluation!")
+    
 # Convert the struct to a dictionary
 struct_dict = Dict{String, Any}(string.(propertynames(CS)) .=> getfield.(Ref(CS), propertynames(CS)))
 struct_dict2 = Dict{String, Any}(string.(propertynames(WindFarm)) .=> getfield.(Ref(WindFarm), propertynames(WindFarm)))
 
 # Specify the filename for the .mat file
-filename = "99_PlotWMATLAB/WindFarmCS.mat"
+filename = "99_PlotWMATLAB/WindFarmCS_Test.mat"
 filename2 = "99_PlotWMATLAB/WindFarmWF.mat"
 # Save the struct to the .mat file
 matwrite(filename, struct_dict)
 matwrite(filename2, struct_dict2)
-
-
-
-end#Superposition
-
-# Compute mixed wake 
-
-# Evaluate new inflow data
+end#getTurbineInflow
 
 # Compute new turbine properties
 
