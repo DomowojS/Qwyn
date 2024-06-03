@@ -13,8 +13,7 @@ userdata = OrderedDict{String, Any}(
     ##########      (2) Turbine data           ######################
     "Yaw" => 270 .+ zeros(80,), # Yaw angle of the turbines (In geographical DEG)
     #Turbine Type
-    "VestasV80" => true,
-    "NREL_5MW"  => false,
+    "Turbine_Type" => "VestasV80", #Turbine Type. One type for the whole wind farm. Possible Inputs: "VestasV80", "NREL_5MW", "DTU_10MW", "IEA_15MW"
 
     ##########      (3) Atmospheric data       ######################
     #Use either 3.1 for single computation OR 3.2 for AEP computation
@@ -31,21 +30,20 @@ userdata = OrderedDict{String, Any}(
     "Wind_rose" => 3.14159999, # Get wind rose as specified in "04_Ambient_data"
 
     ##########      (4) Computational setting  ######################
-    "SimpleComp"        => true,    # For the computation of one case 
-    "AEPComp"           => false,   # For the estimation of the farms AEP
+    "SimpleComp"    => true,    # For the computation of one case 
+    "AEPComp"       => false,   # For the estimation of the farms AEP
     ## Advanced settings:
     #Superposition Method
-    "Linear_Rotorbased"     => true,   # Superposition using linear rotorbased summation for velocity deficit
-    "Momentum_Conserving"   => false,  # Superposition using momentum conserving approach for velocity deficit
+    "Superpos"  => "Linear_Rotorbased" #Superposition method for velocity deficits. Choose between quadratic rotorbased summation & momentum conserving approach. Possible inputs: "Quadratic_Rotorbased", "Momentum_Conserving"
 
     ##########      (5) Numerical parameters   ######################
-    "Y_Res"     => 100,     #Number of spanwise points used to distrectisize the turbine's rotors
-    "Z_Res"     => 10,      #Number of height points to descritisise the rooms (number of height levels computed)
+    "Y_Res"     => 3,    #Number of spanwise points used to distrectisize the turbine's rotors
+    "Z_Res"     => 3,    #Number of height points to descritisise the rooms (number of height levels computed)
+    "Z_Max"     => 110,  #Maximum height
+    "Z_Min"     => 30,   #Minimum height
 
     ##########      (6) Graphical output       ######################
     "z" => 100,
-    "Z_Max"     => 1.5*80,  #Maximum height
-    "Z_Min"     => 0,       #Minimum height
     ##########   Literature Input              ######################
     #= These Numbers are placeholders. They overwritten by data from literature.
     You can provide this as .jld2 file for turbine & atmospheric data.

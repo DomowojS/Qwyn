@@ -49,8 +49,7 @@ mutable struct Windfarm
     
     ##########      (2) Turbine data           ######################   
         Yaw::Vector{Float64};   # Yaw angle of each turbine
-        VestasV80::Bool;        # Turbine Type
-        NREL_5MW::Bool;         # Turbine Type
+        Turbine_Type::String;        # Turbine Type
 
     ##########      (3) Atmospheric data       ######################
     #Use either 3.1 for single computation OR 3.2 for AEP computation
@@ -78,10 +77,11 @@ mutable struct Windfarm
     ##########      (5) Numerical parameters   ######################
         Y_Res::Int;
         Z_Res::Int;     #Height resolution (number of height levels computed)
-    ##########      (6) Graphical output       ######################
-        z::Int;
         Z_Max::Float64; #Maximum height
         Z_Min::Float64; #Minimum height
+
+    ##########      (6) Graphical output       ######################
+        z::Int;
     ##########   Literature Input              ######################
         D::Float64;             # Turbine diameter in [m]
         H::Float64;             # Hub height in [m]

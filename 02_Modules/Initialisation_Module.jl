@@ -120,7 +120,7 @@ function LoadTurbineDATA!(WindFarm, CS)
 The ZCoordinate is also coorrected to have its origin at the Hubheigt of the turbine chosen for modelling. =#
     println("loading turbine data..")
 
-    if WindFarm.VestasV80==true && WindFarm.NREL_5MW==false
+    if WindFarm.Turbine_Type=="VestasV80"
         WindFarm.D = 80;
         WindFarm.H = 70;
         data = load("04_Turbine_Data\\VestasV80_2MW.jld2")  # Load data from Input 
@@ -130,7 +130,7 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
         Interp_P    =   LinearInterpolation(WindFarm.P_Input[:,1], WindFarm.P_Input[:,2]) #Interpolation function for P
         CS.Ct_vec   .=  Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
         CS.P_vec    .=  Interp_P(WindFarm.u_ambient);   #P of each turbine 
-    elseif WindFarm.NREL_5MW==true && WindFarm.VestasV80==false
+    elseif WindFarm.Turbine_Type=="NREL_5MW"
         WindFarm.D = 126;
         WindFarm.H = 90;
         data=load("04_Turbine_Data\\NREL_5MW.jld2")         # Load data from Input 
@@ -140,8 +140,29 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
         Interp_P    =   LinearInterpolation(WindFarm.P_Input[:,1], WindFarm.P_Input[:,2]) #Interpolation function for P
         CS.Ct_vec   .=  Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
         CS.P_vec    .=  Interp_P(WindFarm.u_ambient);   #P of each turbine
+    elseif WindFarm.Turbine_Type=="DTU_10MW"
+        WindFarm.D = 119;
+        WindFarm.H = 178.3;
+        data=load("04_Turbine_Data\\DTU_10MW.jld2")         # Load data from Input 
+        WindFarm.Ct_Input;                                  # Thrustcoefficient vs. Windspeed
+        WindFarm.P_Input;                                   # Power vs. Windspeed
+        Interp_Ct   =   LinearInterpolation(WindFarm.Ct_Input[:,1], WindFarm.Ct_Input[:,2]) #Interpolation function for Ct
+        Interp_P    =   LinearInterpolation(WindFarm.P_Input[:,1], WindFarm.P_Input[:,2]) #Interpolation function for P
+        CS.Ct_vec   .=  Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
+        CS.P_vec    .=  Interp_P(WindFarm.u_ambient);   #P of each turbine
+    elseif WindFarm.Turbine_Type=="IEA_15MW"
+        WindFarm.D = 240;
+        WindFarm.H = 150;
+        data=load("04_Turbine_Data\\IEA_15MW.jld2")         # Load data from Input 
+        WindFarm.Ct_Input;                                  # Thrustcoefficient vs. Windspeed
+        WindFarm.P_Input;                                   # Power vs. Windspeed
+        Interp_Ct   =   LinearInterpolation(WindFarm.Ct_Input[:,1], WindFarm.Ct_Input[:,2]) #Interpolation function for Ct
+        Interp_P    =   LinearInterpolation(WindFarm.P_Input[:,1], WindFarm.P_Input[:,2]) #Interpolation function for P
+        CS.Ct_vec   .=  Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
+        CS.P_vec    .=  Interp_P(WindFarm.u_ambient);   #P of each turbine
     else
-        error("ERROR: Wrong choice of turbine model in", WindFarm.Name,"Make sure to choose one but not more.")
+        error("ERROR: Wrong choice of turbine model in", WindFarm.Name,"Make sure to choose correctly between supported turbines.")
+    
     end
 
     # If onluy two dimensional computation is conducted -> assign Z-Level to Hubheight

@@ -66,7 +66,7 @@ end#ComputeEmpiricalVars
 # Compute mixed wake properties
 function Superposition!(WindFarm, CS)
 
-    if WindFarm.Linear_Rotorbased == true
+    if WindFarm.Superpos == "Quadratic_Rotorbased"
         println("computing mixed wake region..")
         #Velocity deficit
         println("..computing velocity deficit..")
@@ -78,7 +78,7 @@ function Superposition!(WindFarm, CS)
         println("..computing rotor-added turbulence..")
         CS.TI_Farm .= sqrt.((WindFarm.TI_a.*WindFarm.u_ambient).^2 .+ sum((CS.Delta_TI.*CS.u_0_vec).^2, dims=4))./WindFarm.u_ambient;
 
-    elseif WindFarm.Momentum_Conserving == true
+    elseif WindFarm.Superpos =="Momentum_Conserving"
         CS.U_Farm .= CS.Delta_U;
     end
 
