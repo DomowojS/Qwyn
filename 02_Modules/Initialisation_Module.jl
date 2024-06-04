@@ -3,7 +3,7 @@
 module Initialisation_Module
 using JLD2, Interpolations, LinearAlgebra#, MAT, LatinHypercubeSampling, PlotlyJS, Colors
 
-export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!
+export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!, generate_rotor_grid
 
 function initCompArrays(WindFarm)
     println("Initialising arrays..")
@@ -11,98 +11,44 @@ function initCompArrays(WindFarm)
     # Adjust user input for computation
     alpha_Comp  =   deg2rad(270 - WindFarm.alpha) #User Input logic: Geographical. Computation logic: Flow from left to right (270°(Western wind)==0°)
     Yaw_Comp    =   deg2rad.(270 .- WindFarm.Yaw)
+
+    # Transform turbine positions according to inflow direction (Computation logic: windflow always left to right)
+    TMPX = WindFarm.x_vec
+    WindFarm.x_vec =  TMPX .* cos(alpha_Comp) .+ WindFarm.y_vec .* sin(alpha_Comp);
+    WindFarm.y_vec = -TMPX .* sin(alpha_Comp) .+ WindFarm.y_vec .* cos(alpha_Comp);
     
+    # Generates grid to represent the rotor plane
+    if WindFarm.Rotor_Discretization == "gridded"
+        #Generates an evenly distributed grid. Accurate representation for high number of points but very slow.
+        Y_vec, Z_vec = generate_rotor_grid(WindFarm.Rotor_Res)
+    elseif WindFarm.Rotor_Discretization == "fibonacci"
+        #Generates a fibonacci-lattice distributed grid. Accurate representation for significantly lower amount of points.
+        Y_vec, Z_vec = generate_fibonacci(WindFarm.RotorRes)
+    else
+        error("ERROR: Wrong choice of rotor discretization function for", WindFarm.Name,". Check variable Rotor_Discretization. Currently allowed entries: gridded, fibonacci.")
+    end
+
     ### Compute coordinates (in D) for wake computation ###
     # Dimenisons: Relative X Coordinate, Relative Y Coordinate, Z Coordinate, Absolute turbine number
-    XCoordinate = zeros(Float64, WindFarm.N , WindFarm.Y_Res, 1, WindFarm.N);  #Array for X coordinates of all points
-    YCoordinate = zeros(Float64, WindFarm.N , WindFarm.Y_Res, 1, WindFarm.N);  #Array for Y Coordinates of all points
-    Z_Levels    = zeros(Float64, 1, 1, WindFarm.Z_Res, 1);                    #Vector containing all height coordinates
-
-    TMPYCoord   = zeros(Float64, WindFarm.N, WindFarm.Y_Res); #For yaw transformation of coordinates (Y coordinate)
-    TMPXCoord   = zeros(Float64, WindFarm.N, WindFarm.Y_Res); #For yaw transformation of coordinates (X coordinate)
-
-    #TMPZCoord   = zeros(Float64, WindFarm.RotorRes, 1, WindFarm.N); #For LHS distribution of Z coordinates
-
-    ## Initialise temporary X & Y coordinate for yaw angle transformation
-    #TMPYaw_X     = zeros(Float64, WindFarm.RotorRes, WindFarm.N);
-    #TMPY_vector     = zeros(Float64, WindFarm.Y_Res);
-
-
-    # Distribute the Y Coordinate 
-    TMPY_vector     = LinRange(-0.5, 0.5, WindFarm.Y_Res)' 
-
-    
-    for i in 1:WindFarm.N
-    # Transform Y Coordinate according to yaw angle
-    TMPYCoord[i,:]  = 0 .* sin(Yaw_Comp[i]) .+ TMPY_vector .* cos(Yaw_Comp[i]);
-    TMPXCoord[i,:]  = 0 .* cos(Yaw_Comp[i]) .- TMPY_vector .* sin(Yaw_Comp[i]);
-    end
+    XCoordinate = zeros(Float64, WindFarm.N , 1, WindFarm.N);  #Array for X coordinates of all points
+    YCoordinate = zeros(Float64, WindFarm.N , length(Y_vec), WindFarm.N);  #Array for Y Coordinates of all points
+    ZCoordinate = zeros(Float64, 1 , length(Y_vec), 1);  #Vector containing all height coordinates
 
     for i in 1:WindFarm.N
     # Create coordinate array of the structure: 1.Dim: Relative turbine, 2.Dim: RotorPoints, 3.Dim: Absolute turbine
-    XCoordinate[:, :, 1, i] .= TMPXCoord .+ WindFarm.x_vec .- WindFarm.x_vec[i];
-    YCoordinate[:, :, 1, i] .= TMPYCoord .+ WindFarm.y_vec .- WindFarm.y_vec[i];
+        XCoordinate[:, :, i] .= XCoordinate[:, :, i] .+ WindFarm.x_vec .- WindFarm.x_vec[i];
+        for j in 1:WindFarm.N
+            YCoordinate[j, :, i] .= Y_vec .+ WindFarm.y_vec[j];
+        end
+        YCoordinate[:,:,i] .= YCoordinate[:,:,i] .- WindFarm.y_vec[i]
     end
+    ZCoordinate[1,:,1] .= Z_vec
 
-    # Transform with respect to wind direction
-    TMPX = zeros(Float64, WindFarm.N, WindFarm.Y_Res)
-    for i in 1:WindFarm.N
-        TMPX .= XCoordinate[:, :, 1, i];
-        XCoordinate[:, :, 1, i] .=  TMPX .* cos(alpha_Comp) + YCoordinate[:, :, 1, i] .* sin(alpha_Comp);
-        YCoordinate[:, :, 1, i] .= -TMPX .* sin(alpha_Comp) + YCoordinate[:, :, 1, i] .* cos(alpha_Comp);
-    end
-    
-    # Transform with respect to yaw angle
+    #= Transform with respect to yaw angle
+    TBDone!!
+    =#
 
-
-#=COMMENTED OUT
-3D Plot of Point!
-    # Define colors
-    colors = distinguishable_colors(WindFarm.N, colorant"blue")
-    
-    # Create an empty plot
-    layout = Layout(
-    scene=attr(
-        xaxis=attr(
-            nticks=4,
-            range=[-20,20]
-        ),
-        yaxis=attr(
-            nticks=4,
-            range=[-20,20]
-        ),
-        zaxis=attr(
-            nticks=4,
-            range=[-1,7]
-        ),
-    ),
-    scene_aspectratio=attr(x=2, y=2, z=0.2),
-    width=700,
-    margin=attr(
-        r=20,
-        l=10,
-        b=10,
-        t=10
-    ),
-    )
-    
-    scatter3d_plot = plot(layout)
-    k=1;
-    # Iterate over each row and add scatter traces to the plot
-    for i in 1:WindFarm.N
-        x = XCoordinate[i, :, 1, k]
-        y = YCoordinate[i, :, 1, k]
-        #z = ZCoordinate[i, :, 1, k]
-        
-        scatter_trace = scatter3d(x=x, y=y, z=z, mode="markers", marker_size=5, marker_color=colors[i], name="Set $i")
-        add_trace!(scatter3d_plot, scatter_trace)
-    end
-    
-    # Show plot
-    display(scatter3d_plot)
-#End Plot   =# 
-
-    CS=ComputationStruct(   XCoordinate, YCoordinate, Z_Levels, zeros(WindFarm.N , WindFarm.Y_Res, WindFarm.Z_Res, WindFarm.N), alpha_Comp, Yaw_Comp,
+    CS=ComputationStruct(XCoordinate, YCoordinate, ZCoordinate, zeros(WindFarm.N , WindFarm.Y_Res, WindFarm.Z_Res, WindFarm.N), alpha_Comp, Yaw_Comp,
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), (zeros(1,1,1,WindFarm.N) .+ WindFarm.u_ambient), zeros(1,1,1,WindFarm.N), (zeros(1,1,1,WindFarm.N) .+ WindFarm.TI_a),
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), 
                             zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(1,1,1,WindFarm.N), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), zeros(WindFarm.N,WindFarm.Y_Res,WindFarm.Z_Res,WindFarm.N), 
@@ -113,6 +59,34 @@ function initCompArrays(WindFarm)
     return WindFarm, CS
 
 end #initCompArrays
+
+function generate_rotor_grid(totalPoints::Int)
+# This function generates a grid of points int the Y-Z plane to represent the turbine's rotor's.
+
+    # Calculate approximate number of points per axis
+    numPointsPerAxis = ceil(Int, sqrt(totalPoints / π))
+    
+    # Create a sufficiently dense grid to ensure we get the desired number of points
+    x = range(-0.5, stop=0.5, length=numPointsPerAxis * 2)
+    y = range(-0.5, stop=0.5, length=numPointsPerAxis * 2)
+    X, Y = [xi for xi in x, yi in y], [yi for xi in x, yi in y]
+
+    # Flatten the grid matrices
+    X = vec(X)
+    Y = vec(Y)
+
+    # Calculate distance from the origin to each point
+    distances = sqrt.(X.^2 .+ Y.^2)
+
+    # Filter out points that are outside the rotorarea of radius 0.5
+    insiderotor = distances .<= 0.5
+
+    # Keep only the points inside the circle
+    Y = Y[insiderotor]
+    Z = X[insiderotor]
+
+    return Y, Z
+end
 
 function LoadTurbineDATA!(WindFarm, CS)
 #= This function loads all turbine data necessary for the computation

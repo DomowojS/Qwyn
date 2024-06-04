@@ -78,7 +78,7 @@ function Superposition!(WindFarm, CS)
         println("..computing rotor-added turbulence..")
         CS.TI_Farm .= sqrt.((WindFarm.TI_a.*WindFarm.u_ambient).^2 .+ sum((CS.Delta_TI.*CS.u_0_vec).^2, dims=4))./WindFarm.u_ambient;
 
-    elseif WindFarm.Superpos =="Momentum_Conserving"
+    elseif WindFarm.Superpos == "Momentum_Conserving"
         CS.U_Farm .= CS.Delta_U;
     end
 

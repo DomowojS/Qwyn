@@ -72,16 +72,17 @@ mutable struct Windfarm
         AEPComp::Bool;              # For the estimation of the farms AEP
     ## Advanced settings:
     #Superposition Method
-        Linear_Rotorbased::Bool;    # Superposition using linear rotorbased summation for velocity deficit
-        Momentum_Conserving::Bool;  # Superposition using momentum conserving approach for velocity deficit
+        Superpos::String;    # Superposition using linear rotorbased summation for velocity deficit
+
     ##########      (5) Numerical parameters   ######################
-        Y_Res::Int;
-        Z_Res::Int;     #Height resolution (number of height levels computed)
-        Z_Max::Float64; #Maximum height
-        Z_Min::Float64; #Minimum height
+        Rotor_Discretization::String; #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). Possible inputs: "gridded", "fibonacci"
+        Rotor_Res::Int;               #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
 
     ##########      (6) Graphical output       ######################
-        z::Int;
+        z::Int;    
+        Z_Max::Float64;  #Maximum height
+        Z_Min::Float64;  #Minimum height
+
     ##########   Literature Input              ######################
         D::Float64;             # Turbine diameter in [m]
         H::Float64;             # Hub height in [m]

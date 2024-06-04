@@ -7,20 +7,21 @@ userdata = OrderedDict{String, Any}(
     "name" => "HR1",
     # Wind Farm Data
     "N" => 80, #Number of turbines  
-    "x_vec" => LinRange(0,21,80), #[0, 7, 14],   #X-Coordinates
-    "y_vec" => zeros(80,),     #Y-Coordinates
+    "x_vec" => LinRange(0,21,80),    #X-Coordinates [0, 7, 14], #
+    "y_vec" => zeros(80,),     #Y-Coordinates[0, 0, 3], #
 
     ##########      (2) Turbine data           ######################
     "Yaw" => 270 .+ zeros(80,), # Yaw angle of the turbines (In geographical DEG)
     #Turbine Type
-    "Turbine_Type" => "VestasV80", #Turbine Type. One type for the whole wind farm. Possible Inputs: "VestasV80", "NREL_5MW", "DTU_10MW", "IEA_15MW"
+    "Turbine_Type" => "VestasV80",  #Turbine Type. One type for the whole wind farm. 
+                                    #Possible Inputs: "VestasV80", "NREL_5MW", "DTU_10MW", "IEA_15MW"
 
     ##########      (3) Atmospheric data       ######################
     #Use either 3.1 for single computation OR 3.2 for AEP computation
     # (3.1) Single computatiosn 
     #       This section is only used for single case computation    
     "u_ambient" => 10.0,     # [m/s] Ambient wind speed
-    "alpha"     => 270,     # [°] Geographical direction of the wind speed. -> N == 0°
+    "alpha"     => 270,     # [°] Geographical direction of the wind. -> N == 0°
     "TI_a"      => 0.1,     # [-] Ambient turbulence intensity in [-]
     "z_Surf"    => 0.005,   # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
     "z_r"       => 70.0,    # [m] Height the average wind speed "u_ambient" was measured. If not known, choose z_u = 10
@@ -34,16 +35,20 @@ userdata = OrderedDict{String, Any}(
     "AEPComp"       => false,   # For the estimation of the farms AEP
     ## Advanced settings:
     #Superposition Method
-    "Superpos"  => "Linear_Rotorbased" #Superposition method for velocity deficits. Choose between quadratic rotorbased summation & momentum conserving approach. Possible inputs: "Quadratic_Rotorbased", "Momentum_Conserving"
+    "Superpos"  => "Quadratic_Rotorbased", #Superposition method for velocity deficits. Choose between quadratic rotorbased summation & momentum conserving approach. 
+                                           #Possible inputs: "Quadratic_Rotorbased", "Momentum_Conserving"
 
     ##########      (5) Numerical parameters   ######################
-    "Y_Res"     => 3,    #Number of spanwise points used to distrectisize the turbine's rotors
-    "Z_Res"     => 3,    #Number of height points to descritisise the rooms (number of height levels computed)
+    "Rotor_Discretization"  => "gridded",   #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
+                                            #Possible inputs: "gridded", "fibonacci"
+
+    "Rotor_Res"             => 100,         #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
+
+    ##########      (6) Graphical output       ######################
+    "z" => 100,    
     "Z_Max"     => 110,  #Maximum height
     "Z_Min"     => 30,   #Minimum height
 
-    ##########      (6) Graphical output       ######################
-    "z" => 100,
     ##########   Literature Input              ######################
     #= These Numbers are placeholders. They overwritten by data from literature.
     You can provide this as .jld2 file for turbine & atmospheric data.
