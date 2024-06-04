@@ -6,12 +6,12 @@ userdata = OrderedDict{String, Any}(
     # Name of the wind Farm
     "name" => "HR1",
     # Wind Farm Data
-    "N" => 80, #Number of turbines  
-    "x_vec" => LinRange(0,21,80),    #X-Coordinates [0, 7, 14], #
-    "y_vec" => zeros(80,),     #Y-Coordinates[0, 0, 3], #
+    "N" => 6, #Number of turbines  
+    "x_vec" => [0, 7, 14, 21, 28, 35], #LinRange(0,21,80),    #X-Coordinates 
+    "y_vec" => [0, 0, 0, 0, 0, 0], #zeros(80,),     #Y-Coordinates
 
     ##########      (2) Turbine data           ######################
-    "Yaw" => 270 .+ zeros(80,), # Yaw angle of the turbines (In geographical DEG)
+    "Yaw" => 270 .+ zeros(6,), # Yaw angle of the turbines (In geographical DEG)
     #Turbine Type
     "Turbine_Type" => "VestasV80",  #Turbine Type. One type for the whole wind farm. 
                                     #Possible Inputs: "VestasV80", "NREL_5MW", "DTU_10MW", "IEA_15MW"
@@ -20,11 +20,11 @@ userdata = OrderedDict{String, Any}(
     #Use either 3.1 for single computation OR 3.2 for AEP computation
     # (3.1) Single computatiosn 
     #       This section is only used for single case computation    
-    "u_ambient" => 10.0,     # [m/s] Ambient wind speed
+    "u_ambient" => 8,     # [m/s] Ambient wind speed
     "alpha"     => 270,     # [°] Geographical direction of the wind. -> N == 0°
-    "TI_a"      => 0.1,     # [-] Ambient turbulence intensity in [-]
-    "z_Surf"    => 0.005,   # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
-    "z_r"       => 70.0,    # [m] Height the average wind speed "u_ambient" was measured. If not known, choose z_u = 10
+    "TI_a"      => 0.07,     # [-] Ambient turbulence intensity in [-]
+    "z_Surf"    => 0.005,     # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
+    "z_r"       => 70.0,    # [m] Height the average wind speed "u_ambient" was measured. If not known, choose z_r = 10
 
     # (3.2) AEP computation 
     #       This section is only used for AEP computation      
@@ -39,9 +39,10 @@ userdata = OrderedDict{String, Any}(
                                            #Possible inputs: "Quadratic_Rotorbased", "Momentum_Conserving"
 
     ##########      (5) Numerical parameters   ######################
+    "Dimensions"            => "3D",        #Choose dimensions resolution. 1) Three dimensional space or 2) two dimansional plane at Hub height.
+                                            #Possible inputs: "3D", "2D"
     "Rotor_Discretization"  => "gridded",   #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
                                             #Possible inputs: "gridded", "fibonacci"
-
     "Rotor_Res"             => 100,         #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
 
     ##########      (6) Graphical output       ######################
@@ -62,5 +63,5 @@ userdata = OrderedDict{String, Any}(
     "P_Input"   => zeros(1,1), # Power coefficient - defined as .txt in "03_Turbine_Data"
     "Ct_Input"  => zeros(1,1), # Thrust coefficient - defined as .txt in "03_Turbine_data"
     #Atmospheric data placeholders:
-    "u_ambient_zprofile" => zeros(1,1,1,1), # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
+    "u_ambient_zprofile" => zeros(1,1,1), # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
 )

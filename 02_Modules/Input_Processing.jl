@@ -75,6 +75,7 @@ mutable struct Windfarm
         Superpos::String;    # Superposition using linear rotorbased summation for velocity deficit
 
     ##########      (5) Numerical parameters   ######################
+        Dimensions::String;           #Choose dimensions resolution.
         Rotor_Discretization::String; #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). Possible inputs: "gridded", "fibonacci"
         Rotor_Res::Int;               #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
 
@@ -89,7 +90,7 @@ mutable struct Windfarm
         P_Input::Matrix{Float64};    # Power coefficient - defined as .txt in "03_Turbine_Data"
         Ct_Input::Matrix{Float64};    # Thrust coefficient - defined as .txt in "03_Turbine_data"
         #Atmospheric data placeholders:
-        u_ambient_zprofile::Array{Float64,4}; # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
+        u_ambient_zprofile::Array{Float64,3}; # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
 end # mutable struct Windfarm
 
 end #module
