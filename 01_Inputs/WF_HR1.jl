@@ -20,7 +20,7 @@ userdata = OrderedDict{String, Any}(
     #Use either 3.1 for single computation OR 3.2 for AEP computation
     # (3.1) Single computatiosn 
     #       This section is only used for single case computation    
-    "u_ambient" => 8,     # [m/s] Ambient wind speed
+    "u_ambient" => 14,     # [m/s] Ambient wind speed
     "alpha"     => 270,     # [°] Geographical direction of the wind. -> N == 0°
     "TI_a"      => 0.07,     # [-] Ambient turbulence intensity in [-]
     "z_Surf"    => 0.005,     # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
@@ -35,8 +35,8 @@ userdata = OrderedDict{String, Any}(
     "AEPComp"       => false,   # For the estimation of the farms AEP
     ## Advanced settings:
     #Superposition Method
-    "Superpos"  => "Quadratic_Rotorbased", #Superposition method for velocity deficits. Choose between quadratic rotorbased summation & momentum conserving approach. 
-                                           #Possible inputs: "Quadratic_Rotorbased", "Momentum_Conserving"
+    "Superpos"  => "Linear_Rotorbased", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
+                                           #Possible inputs: "Linear_Rotorbased", "Momentum_Conserving"
 
     ##########      (5) Numerical parameters   ######################
     "Dimensions"            => "3D",        #Choose dimensions resolution. 1) Three dimensional space or 2) two dimansional plane at Hub height.

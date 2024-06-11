@@ -56,15 +56,14 @@ end#ComputeEmpiricalVars
 # Compute mixed wake properties
 function Superposition!(WindFarm, CS)
 
-    if WindFarm.Superpos == "Quadratic_Rotorbased"
+    if WindFarm.Superpos == "Linear_Rotorbased"
         #Velocity deficit
-        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sqrt.(sum(CS.Delta_U.^2, dims=3)); 
+        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum(CS.Delta_U, dims=3);
         CS.U_Farm[CS.U_Farm.<0].=0 #Filter of "negative" wind speeds at low heights
 
         #Rotor-added turbulence
         ### IMPLEMENT Height Profile for TI_a -> (WindFarm.TI_a.*WindFarm.u_ambient).^2 needs to be height related and ./WindFarm.u_ambient;, too!
         CS.TI_Farm .= sqrt.((WindFarm.TI_a.*WindFarm.u_ambient).^2 .+ sum((CS.Delta_TI.*CS.u_0_vec).^2, dims=3))./WindFarm.u_ambient;
-
     elseif WindFarm.Superpos == "Momentum_Conserving"
         CS.U_Farm .= CS.Delta_U;
     end

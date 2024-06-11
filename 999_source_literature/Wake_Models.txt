@@ -14,7 +14,7 @@ Wake meandering correction:		 	Braunbehrens, R. and Segalini, A.: ‘A statistic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Superposition models 	  %%
 
-Quadratic, Rotorbased summation: 	Niayifar, A. and Porté-Agel, F.: ‘Analytical Modeling of Wind Farms: A New Approach for Power Prediction’. In: Energies 9(9) (2016). 741. doi: 10.3390/en9090741.
+Linear, Rotorbased summation: 	Niayifar, A. and Porté-Agel, F.: ‘Analytical Modeling of Wind Farms: A New Approach for Power Prediction’. In: Energies 9(9) (2016). 741. doi: 10.3390/en9090741.
 								
 Momentum conserving superpos.:		Zong, H. and Porté-Agel, F.: ‘A momentum-conserving wake superposition method for wind farm power prediction’. In: Journal of Fluid Mechanics 889 (2020). A8. 
 									doi:10.1017/jfm.2020.77

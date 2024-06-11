@@ -162,7 +162,6 @@ function LoadAtmosphericData!(WindFarm,CS)
   1) Simple Computation: Wind & TI shear profile according to the height coordinates/ rotor resolution chosen by the user.
   2) AEP Computation: TBD
 =#
- #WindFarm.u_ambient_zprofile = zeros(1,CS.Real_Rotor_Res,WindFarm.N)#Assign right size to vector
  WindFarm.u_ambient_zprofile = zeros(1,CS.Real_Rotor_Res,1)#Assign right size to vector
  # Compute the ambient velocity log profile only for positive Z_Levels
  WindFarm.u_ambient_zprofile .= (CS.ZCoordinates .> 0) .* (WindFarm.u_ambient .* log.(CS.ZCoordinates ./ WindFarm.z_Surf) ./ log.(WindFarm.z_r / WindFarm.z_Surf))
