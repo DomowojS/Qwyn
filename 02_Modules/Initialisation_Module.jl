@@ -6,8 +6,6 @@ using JLD2, Interpolations, LinearAlgebra#, MAT, LatinHypercubeSampling, PlotlyJ
 export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!, generate_rotor_grid
 
 function initCompArrays(WindFarm)
-    println("Initialising arrays..")
-    
     # Adjust user input for computation
     alpha_Comp  =   deg2rad(270 - WindFarm.alpha) #User Input logic: Geographical. Computation logic: Flow from left to right (270°(Western wind)==0°)
     Yaw_Comp    =   deg2rad.(270 .- WindFarm.Yaw)
@@ -96,8 +94,6 @@ function LoadTurbineDATA!(WindFarm, CS)
 #= This function loads all turbine data necessary for the computation
  It returns an update WindFarm & CS struct with Thrust coefficient and power curve, turbine diameter & hubheight. 
 The ZCoordinate is also coorrected to have its origin at the Hubheigt of the turbine chosen for modelling. =#
-    println("loading turbine data..")
-
     if WindFarm.Turbine_Type=="VestasV80"
         WindFarm.D = 80;
         WindFarm.H = 70;
@@ -166,12 +162,11 @@ function LoadAtmosphericData!(WindFarm,CS)
   1) Simple Computation: Wind & TI shear profile according to the height coordinates/ rotor resolution chosen by the user.
   2) AEP Computation: TBD
 =#
- println("loading atmospheric data..")
+ #WindFarm.u_ambient_zprofile = zeros(1,CS.Real_Rotor_Res,WindFarm.N)#Assign right size to vector
  WindFarm.u_ambient_zprofile = zeros(1,CS.Real_Rotor_Res,1)#Assign right size to vector
-
  # Compute the ambient velocity log profile only for positive Z_Levels
  WindFarm.u_ambient_zprofile .= (CS.ZCoordinates .> 0) .* (WindFarm.u_ambient .* log.(CS.ZCoordinates ./ WindFarm.z_Surf) ./ log.(WindFarm.z_r / WindFarm.z_Surf))
-
+ 
  # Compute TI profile
     #TBDone!
 end #LoadAtmosphericData

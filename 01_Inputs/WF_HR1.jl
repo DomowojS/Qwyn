@@ -6,12 +6,12 @@ userdata = OrderedDict{String, Any}(
     # Name of the wind Farm
     "name" => "HR1",
     # Wind Farm Data
-    "N" => 6, #Number of turbines  
-    "x_vec" => [0, 7, 14, 21, 28, 35], #LinRange(0,21,80),    #X-Coordinates 
-    "y_vec" => [0, 0, 0, 0, 0, 0], #zeros(80,),     #Y-Coordinates
+    "N" => 80, #Number of turbines  
+    "x_vec" => [0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63], #LinRange(0,21,80),   #X-Coordinates [0, 7, 14, 21, 28, 35],
+    "y_vec" => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49], # zeros(80,),         #Y-Coordinates [0, 0, 0, 0, 0, 0],
 
     ##########      (2) Turbine data           ######################
-    "Yaw" => 270 .+ zeros(6,), # Yaw angle of the turbines (In geographical DEG)
+    "Yaw" => 270 .+ zeros(80,), # Yaw angle of the turbines (In geographical DEG)
     #Turbine Type
     "Turbine_Type" => "VestasV80",  #Turbine Type. One type for the whole wind farm. 
                                     #Possible Inputs: "VestasV80", "NREL_5MW", "DTU_10MW", "IEA_15MW"

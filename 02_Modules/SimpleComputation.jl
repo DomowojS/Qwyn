@@ -18,34 +18,26 @@ export Ishihara_WakeModel!, Superposition!, getTurbineInflow!, getNewThrustandPo
 
 # Compute single wake
 function Ishihara_WakeModel!(WindFarm, CS)
-    println("computing single wake..")
-    println("..computing empirical values..")
+
     CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f = ComputeEmpiricalVars(CS.Ct_vec, CS.TI_0_vec, 
                                                             CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f); # Compute empirical values
 
-    CS.Computation_Region_ID = (CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates.*WindFarm.D .< 20) # Limit computation domain to reasonable scope
+    CS.Computation_Region_ID = (CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20 .* WindFarm.D) # Limit computation domain to reasonable scope
 
     # Representative wake width (sigma(x))
-    println("..computing sigma..")
     CS.sigma    .= CS.Computation_Region_ID .* (CS.k .* CS.XCoordinates./WindFarm.D .+ CS.epsilon) .* WindFarm.D; # Compute wake width of all turbines
     
     # Velocity deficit
-    println("..computing velocity deficit..")
     CS.Delta_U  .=  CS.Computation_Region_ID .* ((1 ./ (CS.a .+ CS.b .* CS.XCoordinates./WindFarm.D .+ CS.c .* (1 .+ CS.XCoordinates./WindFarm.D).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.u_0_vec);# Compute velocity deficit
     
     #Rotor-added turbulence
-    println("..computing turbulence empirical values..")
     #Include turbulence computation
     CS.k1       .=   (1 .- (CS.r./WindFarm.D .<= 0.5)) .+ (CS.r./WindFarm.D .<= 0.5) .* ((cos.(pi./2 .* (CS.r./WindFarm.D .- 0.5))).^2);
     CS.k2       .=   (CS.r./WindFarm.D .<= 0.5) .* ((cos.(pi./2 .* (CS.r./WindFarm.D .+ 0.5))).^2);
     CS.delta    .=   (CS.ZCoordinates .< WindFarm.H) .* (WindFarm.TI_a .* (sin.(pi .* (WindFarm.H .- (CS.ZCoordinates))./WindFarm.H)).^2);
 
-    println("..computing rotor-added turbulence..")
     CS.Delta_TI .=   CS.Computation_Region_ID .* (((1 ./ (CS.d .+ CS.e .* CS.XCoordinates./WindFarm.D .+ CS.f .* (1 .+ CS.XCoordinates./WindFarm.D).^-2)) .* 
                             (CS.k1 .* exp.(-(CS.r .- 0.5.*WindFarm.D).^2 ./ (2 .* (CS.sigma).^2)) .+ CS.k2 .* exp.(-(CS.r .+ 0.5.*WindFarm.D).^2 ./(2 .* (CS.sigma).^2)))) .- CS.delta);# Compute rotor-added turbulence
-    
-
-    println("..single wake computation finished!")
 end #Ishihara_Wakemodel
 #
 
@@ -65,35 +57,29 @@ end#ComputeEmpiricalVars
 function Superposition!(WindFarm, CS)
 
     if WindFarm.Superpos == "Quadratic_Rotorbased"
-        println("computing mixed wake region..")
         #Velocity deficit
-        println("..computing velocity deficit..")
-        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sqrt.(sum(CS.Delta_U.^2, dims=4)); 
-        CS.U_Farm[CS.U_Farm.<0].=0 #Filter of "negative" wind speeds in low heights
+        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sqrt.(sum(CS.Delta_U.^2, dims=3)); 
+        CS.U_Farm[CS.U_Farm.<0].=0 #Filter of "negative" wind speeds at low heights
 
         #Rotor-added turbulence
         ### IMPLEMENT Height Profile for TI_a -> (WindFarm.TI_a.*WindFarm.u_ambient).^2 needs to be height related and ./WindFarm.u_ambient;, too!
-        println("..computing rotor-added turbulence..")
-        CS.TI_Farm .= sqrt.((WindFarm.TI_a.*WindFarm.u_ambient).^2 .+ sum((CS.Delta_TI.*CS.u_0_vec).^2, dims=4))./WindFarm.u_ambient;
+        CS.TI_Farm .= sqrt.((WindFarm.TI_a.*WindFarm.u_ambient).^2 .+ sum((CS.Delta_TI.*CS.u_0_vec).^2, dims=3))./WindFarm.u_ambient;
 
     elseif WindFarm.Superpos == "Momentum_Conserving"
         CS.U_Farm .= CS.Delta_U;
     end
-
- println("..mixed wake computation finished!")
 end#Superposition
 
 #Evaluate new inflow data
 function getTurbineInflow!(WindFarm, CS) 
-    println("Reevaluating inflow parameter..")
     # Update inflow parameter
     CS.u_0_vec_old .= CS.u_0_vec #Store old inflow data
     CS.u_0_vec .= reshape(mean(mean(CS.U_Farm, dims=3), dims=2), (1,1,WindFarm.N))    #Compute mean inflow velocity for each turbine
     CS.TI_0_vec .= reshape(mean(mean(CS.TI_Farm, dims=3), dims=2), (1,1,WindFarm.N))  #Compute mean Turbulence intensity for each turbine
 
+
     # Compute termination criterion
     CS.zeta = findmax(abs.(CS.u_0_vec.-CS.u_0_vec_old))[1]
-    println("finished reevaluation!")
 end#getTurbineInflow
 
 # Compute new turbine properties

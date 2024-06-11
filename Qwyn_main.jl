@@ -5,6 +5,7 @@
 #Excecute PKG script, add/ update all neccecary packages can be turned of after first run
 include("02_Modules/PKG_Manager.jl")
 using TickTock, MAT
+tick()
 #Read all input files & create struct array of the data
 include("02_Modules/Input_Processing.jl")  #Precompile module with relevant functions
 using .Input_Processing                    #Make all contents of the module available in this script (Import only imports module name)
@@ -37,29 +38,36 @@ end
 # Iterate over defined cases. Compute one by one (according to settings)
 for WindFarm in WF
     println("###########################")
-    println("Computing: ", WindFarm.name) #Terminal output for which input file is being processed
+    println("Computing: ", WindFarm.name)   #Terminal output for which input file is being processed
     println("###########################")
-    tick()
+
     #Initialise all arrays & matrices needed for the computation.
-    WindFarm, CS = initCompArrays(WindFarm)         #Initialises mutable struct "CA" which contains necessary computation arrays & computes coordinates acc. to user Input.
-    LoadTurbineDATA!(WindFarm, CS)    #Update Input & computation structs with provided power & thrust curves
-    LoadAtmosphericData!(WindFarm,CS) #Update Input & computation structs with atmospheric data (wind shear profile, wind rose etc.)
+    println("Initialising arrays..")
+    WindFarm, CS = initCompArrays(WindFarm) #Initialises mutable struct "CA" which contains necessary computation arrays & computes coordinates acc. to user Input.
+    
+    println("..loading turbine data..")
+    LoadTurbineDATA!(WindFarm, CS)          #Update Input & computation structs with provided power & thrust curves
+    println("..loading atmospheric data..")
+    LoadAtmosphericData!(WindFarm,CS)       #Update Input & computation structs with atmospheric data (wind shear profile, wind rose etc.)
     tock()
+    tick()
+    # Iterating over turbine rows
+    i=0
+    println("Starting iterative computation...")
     while CS.zeta > 10^-3
-        tick()
+        i=i+1
+        println("Iteration ", i)
         #Compute single wake effect
         Ishihara_WakeModel!(WindFarm, CS)  #Compute wakes of single turbines
-        tock()
-        tick()
         #Compute mixed wake
         Superposition!(WindFarm, CS)
         #Evaluate new inflow data
         getTurbineInflow!(WindFarm, CS) 
         #Evaluate new operation properties
         getNewThrustandPower!(WindFarm, CS)
-        tock()
     end
-
+    println("...computation finished!")
+    tock()
     # Convert the struct to a dictionary
     CS.Interp_Ct=0
     CS.Interp_P=0
@@ -76,5 +84,4 @@ matwrite(filename2, struct_dict2)
 global CD = CS
 
 end
-println("This was a Test")
 
