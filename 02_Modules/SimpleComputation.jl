@@ -14,11 +14,10 @@ using Revise
 using MAT
 using LinearAlgebra
 using Statistics
-export Ishihara_WakeModel!, Superposition!, getTurbineInflow!, getNewThrustandPower!
+export Ishihara_WakeModel!, Superposition!, getTurbineInflow!, getNewThrustandPower!, getTotalPower!
 
-# Compute single wake
 function Ishihara_WakeModel!(WindFarm, CS)
-
+# Compute single wake
     CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f = ComputeEmpiricalVars(CS.Ct_vec, CS.TI_0_vec, 
                                                             CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f); # Compute empirical values
 
@@ -42,6 +41,7 @@ end #Ishihara_Wakemodel
 #
 
 function ComputeEmpiricalVars(Ct, TI_0_vec, k, epsilon, a, b, c, d, e, f)
+# Compute empirical parameters for the Ishihara WakeModel
     k       .= 0.11 .* Ct.^1.07  .* TI_0_vec.^0.2 
     epsilon .= 0.23 .* Ct.^-0.25 .* TI_0_vec.^0.17
     a       .= 0.93 .* Ct.^-0.75 .* TI_0_vec.^0.17
@@ -53,9 +53,8 @@ function ComputeEmpiricalVars(Ct, TI_0_vec, k, epsilon, a, b, c, d, e, f)
     return k, epsilon, a, b, c, d, e, f
 end#ComputeEmpiricalVars
 
-# Compute mixed wake properties
 function Superposition!(WindFarm, CS)
-
+# Compute mixed wake properties
     if WindFarm.Superpos == "Linear_Rotorbased"
         #Velocity deficit
         CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum(CS.Delta_U, dims=3);
@@ -69,9 +68,9 @@ function Superposition!(WindFarm, CS)
     end
 end#Superposition
 
-#Evaluate new inflow data
+
 function getTurbineInflow!(WindFarm, CS) 
-    # Update inflow parameter
+# Evaluate new inflow data
     CS.u_0_vec_old .= CS.u_0_vec #Store old inflow data
     CS.u_0_vec .= reshape(mean(mean(CS.U_Farm, dims=3), dims=2), (1,1,WindFarm.N))    #Compute mean inflow velocity for each turbine
     CS.TI_0_vec .= reshape(mean(mean(CS.TI_Farm, dims=3), dims=2), (1,1,WindFarm.N))  #Compute mean Turbulence intensity for each turbine
@@ -81,8 +80,9 @@ function getTurbineInflow!(WindFarm, CS)
     CS.zeta = findmax(abs.(CS.u_0_vec.-CS.u_0_vec_old))[1]
 end#getTurbineInflow
 
-# Compute new turbine properties
+
 function getNewThrustandPower!(WindFarm, CS)
+# Compute new turbine properties
     if WindFarm.Turbine_Type=="VestasV80"
         CS.Ct_vec   .=  CS.Interp_Ct.(CS.u_0_vec);  #Ct of each turbine
         CS.P_vec    .=  CS.Interp_P.(CS.u_0_vec);   #P of each turbine 
@@ -97,6 +97,11 @@ function getNewThrustandPower!(WindFarm, CS)
         CS.P_vec    .=  CS.Interp_P.(CS.u_0_vec);   #P of each turbine
     end
 end
+
+function getTotalPower!(CS)
+# Compute total pwoer output of the wind farm
+    CS.TotalPower = sum(CS.P_vec)
+end#getTotalPower
 
 # Compute power output
 

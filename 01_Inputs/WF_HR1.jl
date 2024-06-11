@@ -8,7 +8,7 @@ userdata = OrderedDict{String, Any}(
     # Wind Farm Data
     "N" => 80, #Number of turbines  
     "x_vec" => [0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63], #LinRange(0,21,80),   #X-Coordinates [0, 7, 14, 21, 28, 35],
-    "y_vec" => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49], # zeros(80,),         #Y-Coordinates [0, 0, 0, 0, 0, 0],
+    "y_vec" => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49],     #zeros(80,),         #Y-Coordinates [0, 0, 0, 0, 0, 0],
 
     ##########      (2) Turbine data           ######################
     "Yaw" => 270 .+ zeros(80,), # Yaw angle of the turbines (In geographical DEG)
@@ -41,9 +41,9 @@ userdata = OrderedDict{String, Any}(
     ##########      (5) Numerical parameters   ######################
     "Dimensions"            => "3D",        #Choose dimensions resolution. 1) Three dimensional space or 2) two dimansional plane at Hub height.
                                             #Possible inputs: "3D", "2D"
-    "Rotor_Discretization"  => "gridded",   #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
+    "Rotor_Discretization"  => "fibonacci",   #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
                                             #Possible inputs: "gridded", "fibonacci"
-    "Rotor_Res"             => 100,         #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
+    "Rotor_Res"             => 10,         #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
 
     ##########      (6) Graphical output       ######################
     "z" => 100,    

@@ -21,7 +21,7 @@ function initCompArrays(WindFarm)
         Y_vec, Z_vec = generate_rotor_grid(WindFarm.Rotor_Res)
     elseif WindFarm.Rotor_Discretization == "fibonacci"
         #Generates a fibonacci-lattice distributed grid. Accurate representation for significantly lower amount of points.
-        Y_vec, Z_vec = generate_fibonacci(WindFarm.RotorRes)
+        Y_vec, Z_vec = generate_fibonacci(WindFarm.Rotor_Res)
     else
         error("ERROR: Wrong choice of rotor discretization function for", WindFarm.Name,". Check variable Rotor_Discretization. Currently allowed entries: gridded, fibonacci.")
     end
@@ -51,7 +51,7 @@ function initCompArrays(WindFarm)
 
     # Create struct which holds all computation arrays
     CS=ComputationStruct(XCoordinate, YCoordinate, ZCoordinate, zeros(WindFarm.N , Real_Rotor_Res, WindFarm.N), Real_Rotor_Res,  alpha_Comp, Yaw_Comp,
-                            zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 0, 0, (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), zeros(1,1,WindFarm.N), (zeros(1,1,WindFarm.N) .+ WindFarm.TI_a),
+                            zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 0, 0, 0, (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), zeros(1,1,WindFarm.N), (zeros(1,1,WindFarm.N) .+ WindFarm.TI_a),
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
                             zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(1,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N),
@@ -63,7 +63,7 @@ function initCompArrays(WindFarm)
 end #initCompArrays
 
 function generate_rotor_grid(totalPoints::Int)
-# This function generates a grid of points int the Y-Z plane to represent the turbine's rotor's.
+# This function generates a grid of points in the Y-Z plane to represent the turbine's rotor's.
 
     # Calculate approximate number of points per axis
     numPointsPerAxis = ceil(Int, sqrt(totalPoints / π))
@@ -88,7 +88,26 @@ function generate_rotor_grid(totalPoints::Int)
     Z = X[insiderotor]
 
     return Y, Z
-end
+end #generate_rotor_grid
+
+function generate_fibonacci(totalPoints::Int)
+# This function generates a fibonacci-lattice grid of points int the Y-Z plane to represent the turbine's rotor's.
+    # Golden ratio
+    φ = (sqrt(5) + 1) / 2
+
+    # Generate points using the Fibonacci lattice method
+    indices = 1:totalPoints
+
+    # Calculate radii and angles
+    r = sqrt.(indices / totalPoints) * 0.5  # radius scaled to the circle with radius 0.5
+    θ = 2 * π * φ * indices
+
+    # Convert polar coordinates to Cartesian coordinates
+    Y = r .* cos.(θ)
+    Z = r .* sin.(θ)
+
+    return Y, Z
+end #generate_fibonacci
 
 function LoadTurbineDATA!(WindFarm, CS)
 #= This function loads all turbine data necessary for the computation
@@ -183,7 +202,8 @@ mutable struct ComputationStruct
     # Turbine specifics
     Yaw_Comp::Vector{Float64};      #Yawangle of each turbine
     Ct_vec::Array{Float64,3};       #Ct of each turbine
-    P_vec::Array{Float64,3};        #P of each turbine 
+    P_vec::Array{Float64,3};        #P of each turbine
+    TotalPower::Float64;            #Wind farm total power
     Interp_Ct::Any; #Interpolation function of thrustcoefficient
     Interp_P::Any;  #Interpolation function of power
     u_0_vec::Array{Float64,3};      #Inflow velocity of each turbine (Hubheight)
