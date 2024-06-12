@@ -1,20 +1,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%
 %% Single wake models %%
 
-Ishihara-Qian wake model:		 	Ishihara, T. and Qian, G.-W.: ‘A new Gaussian-based analytical wake model for wind turbines considering ambient turbulence intensities and thrust coefficient effects’. In: Journal of 										Wind Engineering and Industrial Aerodynamics 177 (2018), pp. 275–292. doi: 10.1016/j.jweia.2018.04.010.
+Ishihara-Qian wake model:		 	Ishihara, T. and Qian, G.-W.: ‘A new Gaussian-based analytical wake model for wind turbines considering 										ambient turbulence intensities and thrust coefficient effects’. In: Journal of Wind Engineering and 											Idustrial Aerodynamics 177 (2018), pp. 275–292. doi: 10.1016/j.jweia.2018.04.010.
 
-Yaw deflection addition:		 	Qian, G.-W. and Ishihara, T.: ‘A new analytical wake model for yawed wind turbines’. In: Energies 11(3) (2018), pp. 665–689. doi: 10.3390/en11030665.	
+Yaw deflection addition:		 	Qian, G.-W. and Ishihara, T.: ‘A new analytical wake model for yawed wind turbines’. In: Energies 11(3) (										2018), pp. 665–689. doi: 10.3390/en11030665.	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Included correction models %%
 
-Wake meandering correction:		 	Braunbehrens, R. and Segalini, A.: ‘A statistical model for wake meandering behind wind turbines’. In: Journal of Wind Engineering and Industrial Aerodynamics 193 (2019). 103954. 
-								 	doi: 10.1016/j.jweia.2019.103954.
+Wake meandering correction:		 	Braunbehrens, R. and Segalini, A.: ‘A statistical model for wake meandering behind wind turbines’. In: 											Journal of Wind Engineering and Industrial Aerodynamics 193 (2019). 103954. doi: 10.1016/j.jweia.2019.103954.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Superposition models 	  %%
 
-Linear, Rotorbased summation: 	Niayifar, A. and Porté-Agel, F.: ‘Analytical Modeling of Wind Farms: A New Approach for Power Prediction’. In: Energies 9(9) (2016). 741. doi: 10.3390/en9090741.
+Linear, Rotorbased summation: 		Niayifar, A. and Porté-Agel, F.: ‘Analytical Modeling of Wind Farms: A New Approach for Power Prediction’. 										In: Energies 9(9) (2016). 741. doi: 10.3390/en9090741.
 								
-Momentum conserving superpos.:		Zong, H. and Porté-Agel, F.: ‘A momentum-conserving wake superposition method for wind farm power prediction’. In: Journal of Fluid Mechanics 889 (2020). A8. 
-									doi:10.1017/jfm.2020.77
+Momentum conserving superpos.:		Zong, H. and Porté-Agel, F.: ‘A momentum-conserving wake superposition method for wind farm power 												prediction’. In: Journal of Fluid Mechanics 889 (2020). A8. doi:10.1017/jfm.2020.77

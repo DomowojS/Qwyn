@@ -74,6 +74,8 @@ mutable struct Windfarm
     ## Advanced settings:
     #Superposition Method
         Superpos::String;    # Superposition using linear rotorbased summation for velocity deficit
+    #Correction Models
+        Meandering::Bool;    #Meandering correction as proposed by Braunbehrens & Segalini (2019).
 
     ##########      (5) Numerical parameters   ######################
         Dimensions::String;           #Choose dimensions resolution.

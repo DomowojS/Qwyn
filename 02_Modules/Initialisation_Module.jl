@@ -3,7 +3,7 @@
 module Initialisation_Module
 using JLD2, Interpolations, LinearAlgebra
 
-export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!, generate_rotor_grid
+export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!
 
 function initCompArrays(WindFarm)
 # Initialises/ preallocates all arrays needed for computation
@@ -58,7 +58,8 @@ function initCompArrays(WindFarm)
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
                             zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(1,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N),
-                            similar(XCoordinate, Bool), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 100
+                            similar(XCoordinate, Bool), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
+                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 100
                         )
  
     return WindFarm, CS
@@ -122,43 +123,44 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
         data = load("04_Turbine_Data\\VestasV80_2MW.jld2")  # Load data from Input 
         WindFarm.Ct_Input = data["CT_Input"];               # Thrustcoefficient vs. Windspeed
         WindFarm.P_Input  = data["P_Input"];                 # Power vs. Windspeed
-        CS.Interp_Ct   =   LinearInterpolation(WindFarm.Ct_Input[:,1], WindFarm.Ct_Input[:,2]) #Interpolation function for Ct
-        CS.Interp_P    =   LinearInterpolation(WindFarm.P_Input[:,1], WindFarm.P_Input[:,2]) #Interpolation function for P
-        CS.Ct_vec   .=  CS.Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
-        CS.P_vec    .=  CS.Interp_P(WindFarm.u_ambient);   #P of each turbine 
+        
+        # Correct input values in lower and upper region
+        lower_correctionCT  = [0 0; 3.99 0];
+        upper_correctionCT  = [25.0135 0; 50 0];
+        WindFarm.Ct_Input = vcat(lower_correctionCT, WindFarm.Ct_Input)
+        WindFarm.Ct_Input = vcat(WindFarm.Ct_Input, upper_correctionCT)
+
+        lower_correctionP  = [0 0; 3.98 0];
+        upper_correctionP  = [25.0135 0; 50 0];
+        WindFarm.P_Input = vcat(lower_correctionP, WindFarm.P_Input)
+        WindFarm.P_Input = vcat(WindFarm.P_Input, upper_correctionP)
+
     elseif WindFarm.Turbine_Type=="NREL_5MW"
         WindFarm.D = 126;
         WindFarm.H = 90;
         data=load("04_Turbine_Data\\NREL_5MW.jld2")         # Load data from Input 
         WindFarm.Ct_Input;                                  # Thrustcoefficient vs. Windspeed
         WindFarm.P_Input;                                   # Power vs. Windspeed
-        CS.Interp_Ct   =   LinearInterpolation(WindFarm.Ct_Input[:,1], WindFarm.Ct_Input[:,2]) #Interpolation function for Ct
-        CS.Interp_P    =   LinearInterpolation(WindFarm.P_Input[:,1], WindFarm.P_Input[:,2]) #Interpolation function for P
-        CS.Ct_vec   .=  CS.Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
-        CS.P_vec    .=  CS.Interp_P(WindFarm.u_ambient);   #P of each turbine
     elseif WindFarm.Turbine_Type=="DTU_10MW"
         WindFarm.D = 119;
         WindFarm.H = 178.3;
         data=load("04_Turbine_Data\\DTU_10MW.jld2")         # Load data from Input 
         WindFarm.Ct_Input;                                  # Thrustcoefficient vs. Windspeed
         WindFarm.P_Input;                                   # Power vs. Windspeed
-        CS.Interp_Ct   =   LinearInterpolation(WindFarm.Ct_Input[:,1], WindFarm.Ct_Input[:,2]) #Interpolation function for Ct
-        CS.Interp_P    =   LinearInterpolation(WindFarm.P_Input[:,1], WindFarm.P_Input[:,2]) #Interpolation function for P
-        CS.Ct_vec   .=  CS.Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
-        CS.P_vec    .=  CS.Interp_P(WindFarm.u_ambient);   #P of each turbine
     elseif WindFarm.Turbine_Type=="IEA_15MW"
         WindFarm.D = 240;
         WindFarm.H = 150;
         data=load("04_Turbine_Data\\IEA_15MW.jld2")         # Load data from Input 
         WindFarm.Ct_Input;                                  # Thrustcoefficient vs. Windspeed
         WindFarm.P_Input;                                   # Power vs. Windspeed
-        CS.Interp_Ct   =   LinearInterpolation(WindFarm.Ct_Input[:,1], WindFarm.Ct_Input[:,2]) #Interpolation function for Ct
-        CS.Interp_P    =   LinearInterpolation(WindFarm.P_Input[:,1], WindFarm.P_Input[:,2]) #Interpolation function for P
-        CS.Ct_vec   .=  CS.Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
-        CS.P_vec    .=  CS.Interp_P(WindFarm.u_ambient);   #P of each turbine
     else
         error("ERROR: Wrong choice of turbine model in", WindFarm.Name,". Make sure to choose correctly between supported turbines.")
     end
+    #Define Interpolation functions and preassign initial Ct and P values
+    CS.Interp_Ct   =   LinearInterpolation(WindFarm.Ct_Input[:,1], WindFarm.Ct_Input[:,2]) #Interpolation function for Ct
+    CS.Interp_P    =   LinearInterpolation(WindFarm.P_Input[:,1], WindFarm.P_Input[:,2]) #Interpolation function for P
+    CS.Ct_vec   .=  CS.Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
+    CS.P_vec    .=  CS.Interp_P(WindFarm.u_ambient);   #P of each turbine 
 
     # If onluy two dimensional computation is conducted -> assign Z-Level to Hubheight
     # This bit needs some revision with respect to including different turbine (diameters) into the computation.
@@ -229,6 +231,12 @@ mutable struct ComputationStruct
     delta::Array{Float64,3};    #Parameter for turbulence computation
     Delta_TI::Array{Float64,3}; #Rotor-added turbulence
     Computation_Region_ID::Array{Bool,3}; #ID for limiting computation of the wake region
+    #Arrays for Superposition & Meandering
+    u_c_vec::Array{Float64,3};  #Convection velocity
+    #Arrays exclusively for Meandering
+    psi::Array{Float64,3};      #fluctuation intensity
+    Lambda::Array{Float64,3};   #Integral length scale of representative eddy
+    sigma_m::Array{Float64,3};  #wake width correction parameter
     #Arrays needed to superimpose
     U_Farm::Array{Float64,3};
     TI_Farm::Array{Float64,3};

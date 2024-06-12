@@ -409,9 +409,9 @@ version = "0.9.31"
 
 [[Kaleido_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "43032da5832754f58d14a91ffbe86d5f176acda9"
+git-tree-sha1 = "2ef87eeaa28713cb010f9fb0be288b6c1a4ecd53"
 uuid = "f7e6163d-2fa5-5f23-b69c-1db539e41963"
-version = "0.2.1+0"
+version = "0.1.0+0"
 
 [[LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]

@@ -7,7 +7,7 @@ using Statistics
 export Ishihara_WakeModel!, Superposition!, getTurbineInflow!, getNewThrustandPower!, getTotalPower!
 
 function Ishihara_WakeModel!(WindFarm, CS)
-# Compute single wake
+# Compute single wake according to the Ishihara-Qian model (2018)
     CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f = ComputeEmpiricalVars(CS.Ct_vec, CS.TI_0_vec, 
                                                             CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f); # Compute empirical values
 
@@ -16,9 +16,16 @@ function Ishihara_WakeModel!(WindFarm, CS)
     # Representative wake width (sigma(x))
     CS.sigma    .= CS.Computation_Region_ID .* (CS.k .* CS.XCoordinates./WindFarm.D .+ CS.epsilon) .* WindFarm.D; # Compute wake width of all turbines
     
-    # Velocity deficit
+   
+    if WindFarm.Meandering == true 
+        # run meandering correction
+        CS.psi, CS.Lambda, CS. sigma_m = Meandering_Correction(CS.psi, CS.Lambda, CS.TI_0_vec, CS.u_0_vec, CS.ZCoordinates, CS.XCoordinates, CS.u_0_vec)
+    else
+
+    # Velocity deficit without corrections
     CS.Delta_U  .=  CS.Computation_Region_ID .* ((1 ./ (CS.a .+ CS.b .* CS.XCoordinates./WindFarm.D .+ CS.c .* (1 .+ CS.XCoordinates./WindFarm.D).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.u_0_vec);# Compute velocity deficit
-    
+    end
+
     #Rotor-added turbulence
     #Include turbulence computation
     CS.k1       .=   (1 .- (CS.r./WindFarm.D .<= 0.5)) .+ (CS.r./WindFarm.D .<= 0.5) .* ((cos.(pi./2 .* (CS.r./WindFarm.D .- 0.5))).^2);
@@ -30,7 +37,7 @@ function Ishihara_WakeModel!(WindFarm, CS)
 end #Ishihara_Wakemodel
 #
 
-function ComputeEmpiricalVars(Ct, TI_0_vec, k, epsilon, a, b, c, d, e, f)
+function ComputeEmpiricalVars(Ct::Array{Float64}, TI_0_vec::Array{Float64}, k::Array{Float64}, epsilon::Array{Float64}, a::Array{Float64}, b::Array{Float64}, c::Array{Float64}, d::Array{Float64}, e::Array{Float64}, f::Array{Float64})
 # Compute empirical parameters for the Ishihara WakeModel
     k       .= 0.11 .* Ct.^1.07  .* TI_0_vec.^0.2 
     epsilon .= 0.23 .* Ct.^-0.25 .* TI_0_vec.^0.17
@@ -42,6 +49,17 @@ function ComputeEmpiricalVars(Ct, TI_0_vec, k, epsilon, a, b, c, d, e, f)
     f       .= 0.7  .* Ct.^-3.2  .* TI_0_vec.^-0.45
     return k, epsilon, a, b, c, d, e, f
 end#ComputeEmpiricalVars
+
+function Meandering_Correction(psi::Array{Float64}, Lambda::Array{Float64}, TI_0_vec::Array{Float64}, u_0_vec::Array{Float64}, ZCoordinates::Array{Float64}, XCoordinates::Array{Float64}, u_c_vec::Array{Float64})
+# Compute the meandering correction according to the Braunbehrens & Segalini model (2019) 
+    #Compute fluctuation intensity
+    psi     .= 0.7.*TI_0_vec.*u_0_vec    
+    #Compute integral length scale of representative eddy   
+    Lambda  .= (0.4 .* ZCoordinates) ./ psi
+    #Compute corrected wake width 
+    sigma_m .= sqrt.((2 .* psi .* Lambda.^2) .* ((XCoordinates./(u_c_vec.*Lambda)) .+ exp.(-XCoordinates./(u_c_vec.*Lambda)) .- 1))  
+    return psi, Lambda, sigma_m          
+end#Meandering_Correction
 
 function Superposition!(WindFarm, CS)
 # Compute mixed wake properties

@@ -56,7 +56,7 @@ function Qwyn_Simple()
         SimplePlots(WindFarm, CS)
         println("...finished!")
 
-                                ## Temporary stuff     
+                                #= Temporary stuff -> for saving to MAT and plotting in Matlab!    
                                     # Convert the struct to a dictionary
                                     CS.Interp_Ct=0
                                     CS.Interp_P=0
@@ -69,31 +69,31 @@ function Qwyn_Simple()
                                 # Save the struct to the .mat file
                                 matwrite(filename, struct_dict)
                                 matwrite(filename2, struct_dict2)
-
+                                =#
     global CS
     end
 
     return WF, CS;
-end#Qwyn
+end#Qwyn_Simple
 
 function Qwyn_AEP()
 #= -> Logic: To be done -> Using different functions for different tasks.
 
-1) Qwyn_Simple
-2) Qwyn_AEP
+    1) Qwyn_Simple
+    2) Qwyn_AEP
 
-( 3) Qwyn_Optimise_AEP
-4) Qwyn_Optimise_Yaw ) => Could be written by a separate user 
+    ( 3) Qwyn_Optimise_AEP
+    4) Qwyn_Optimise_Yaw ) => Could be written by a separate user 
 
-Idea: Possible to define a functon which can go without input (default) or with input -> when called by another function.
-Meaning: If the user wants to compute an AEP. The AEP function simply calls the "Qwyn_Simple" function several times.
+    Idea: Possible to define a functon which can go without input (default) or with input -> when called by another function.
+    Meaning: If the user wants to compute an AEP. The AEP function simply calls the "Qwyn_Simple" function several times.
 
-Followup Idea: 
-Define a second "Qwyn_Simple". For example "Qwyn_Simple_internal_use" --> can be called by other function such as "Qwyn_AEP". 
-Here, the structs WindFarm & CS can be passed directly. without having to process the input data again and initalise matrices.
+    Followup Idea: 
+    Define a second "Qwyn_Simple". For example "Qwyn_Simple_internal_use" --> can be called by other function such as "Qwyn_AEP". 
+    Here, the structs WindFarm & CS can be passed directly. without having to process the input data again and initalise matrices.
 
-Meaning for Input file:
-The Input file will, hence, be reduced to physical & numerical settings.
+    Meaning for Input file:
+    The Input file will, hence, be reduced to physical & numerical settings.
 =#
 
 end#Qwyn_AEP()
