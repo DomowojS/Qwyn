@@ -11,8 +11,7 @@ userdata = OrderedDict{String, Any}(
     "y_vec" => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49],     #zeros(80,),         #Y-Coordinates [0, 0, 0, 0, 0, 0],
 
     ##########      (2) Turbine data           ######################
-    "Yaw" => 270 .+ zeros(80,), # Yaw angle of the turbines (In geographical DEG)
-    #Turbine Type
+    "Yaw" => 270 .+ zeros(80,),     # Yaw angle of the turbines (In geographical DEG)
     "Turbine_Type" => "VestasV80",  #Turbine Type. One type for the whole wind farm. 
                                     #Possible Inputs: "VestasV80", "NREL_5MW", "DTU_10MW", "IEA_15MW"
 
@@ -20,10 +19,10 @@ userdata = OrderedDict{String, Any}(
     #Use either 3.1 for single computation OR 3.2 for AEP computation
     # (3.1) Single computatiosn 
     #       This section is only used for single case computation    
-    "u_ambient" => 14,     # [m/s] Ambient wind speed
+    "u_ambient" => 14,      # [m/s] Ambient wind speed
     "alpha"     => 270,     # [°] Geographical direction of the wind. -> N == 0°
-    "TI_a"      => 0.07,     # [-] Ambient turbulence intensity in [-]
-    "z_Surf"    => 0.005,     # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
+    "TI_a"      => 0.07,    # [-] Ambient turbulence intensity in [-]
+    "z_Surf"    => 0.005,   # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
     "z_r"       => 70.0,    # [m] Height the average wind speed "u_ambient" was measured. If not known, choose z_r = 10
 
     # (3.2) AEP computation 
@@ -33,19 +32,32 @@ userdata = OrderedDict{String, Any}(
     ##########      (4) Computational setting  ######################
     "SimpleComp"    => true,    # For the computation of one case 
     "AEPComp"       => false,   # For the estimation of the farms AEP
+    
     ## Advanced settings:
     #Superposition Method
     "Superpos"  => "Linear_Rotorbased", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
-                                           #Possible inputs: "Linear_Rotorbased", "Momentum_Conserving"
+                                        #Possible inputs: "Linear_Rotorbased", "Momentum_Conserving"
 
     ##########      (5) Numerical parameters   ######################
     "Dimensions"            => "3D",        #Choose dimensions resolution. 1) Three dimensional space or 2) two dimansional plane at Hub height.
                                             #Possible inputs: "3D", "2D"
-    "Rotor_Discretization"  => "fibonacci",   #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
+    "Rotor_Discretization"  => "fibonacci", #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
                                             #Possible inputs: "gridded", "fibonacci"
-    "Rotor_Res"             => 10,         #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
+    "Rotor_Res"             => 10,          #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
 
     ##########      (6) Graphical output       ######################
+    # Simple plots, no further computation:
+    "Plot_power"        => true,    #Plots power output of several turbines
+    "Plot_windspeed"    => true,    #Plots average inflow windspeed of several turbines
+    "Plot_turbulence"   => true,    #Plots average inflow turbulence of several turbines
+    "Turbine_Identification"    => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], #Identify, which turbines should be included in the plot
+    "Normalize_to"              => 1,                               #Specify which turbines power the plot should be normalised to (If no normalisation is wanted, type: 0)
+    # Advanced plots, advanced computation will commence
+    "Plot_wind_field"       => false,   #Plots wind field for one simple case
+    "Plot_turbulence_field" => false,   #Plots turbulence field for one simple case
+    "Wind_Direction"        => 270.0,     #Wind direction for plot (has to be a direction included during computation!)
+
+
     "z" => 100,    
     "Z_Max"     => 110,  #Maximum height
     "Z_Min"     => 30,   #Minimum height

@@ -3,16 +3,6 @@ Script to Process computation &/ optimisation
 =#
 
 module SimpleComputation
-using Pkg
-using FileIO
-using Parameters
-using InteractiveUtils
-using DataStructures
-using LatinHypercubeSampling
-using Revise
-#using PlotlyJS
-using MAT
-using LinearAlgebra
 using Statistics
 export Ishihara_WakeModel!, Superposition!, getTurbineInflow!, getNewThrustandPower!, getTotalPower!
 

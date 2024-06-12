@@ -1,11 +1,13 @@
 # Module to initialise matrices and compute all necessary coordinates
 
 module Initialisation_Module
-using JLD2, Interpolations, LinearAlgebra#, MAT, LatinHypercubeSampling, PlotlyJS, Colors
+using JLD2, Interpolations, LinearAlgebra
 
 export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!, generate_rotor_grid
 
 function initCompArrays(WindFarm)
+# Initialises/ preallocates all arrays needed for computation
+
     # Adjust user input for computation
     alpha_Comp  =   deg2rad(270 - WindFarm.alpha) #User Input logic: Geographical. Computation logic: Flow from left to right (270°(Western wind)==0°)
     Yaw_Comp    =   deg2rad.(270 .- WindFarm.Yaw)
@@ -25,6 +27,7 @@ function initCompArrays(WindFarm)
     else
         error("ERROR: Wrong choice of rotor discretization function for", WindFarm.Name,". Check variable Rotor_Discretization. Currently allowed entries: gridded, fibonacci.")
     end
+
     # Find and stor actual amount of points per rotor (after grid generation)
     Real_Rotor_Res = length(Y_vec);
 
@@ -175,7 +178,7 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
 
 end #LoadTurbineDATA
 
-function LoadAtmosphericData!(WindFarm,CS)
+function LoadAtmosphericData!(WindFarm, CS)
 #= This function loads all atmospheric data necessary for the computation
  It returns an updated WindFarm & CS struct with:
   1) Simple Computation: Wind & TI shear profile according to the height coordinates/ rotor resolution chosen by the user.

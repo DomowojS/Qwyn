@@ -8,8 +8,8 @@ using Pkg, FileIO, Parameters, InteractiveUtils, DataStructures, Revise
 
 export generateWF, ComputationData
 
-# Function to generate struct instances from files in Input folder
 function generateWF(prefix::AbstractString, folder::AbstractString)
+#Function to generate struct instances from files in Input folder
     # Get a list of all files in the Inputfolder
     files = readdir(folder)
     # Filter out files that start with the given prefix
@@ -18,25 +18,26 @@ function generateWF(prefix::AbstractString, folder::AbstractString)
     n=length(script_files);   
     WF=Vector{Windfarm}(undef, n);  # Creating array to contain all input data (of the type of Windfarm - mutable struct)
 
-    # Iterate over all input files and store them in struct array
-    for i=1:n
-        # User Input
-        include(joinpath(folder, script_files[i])) #Overwrite user data after each iteration
-        # Create an instance of the struct
-        WF[i] = WFConstructor(userdata)
-    end
-return WF
+        # Iterate over all input files and store them in struct array
+        for i=1:n
+            # User Input
+            include(joinpath(folder, script_files[i])) #Overwrite user data after each iteration
+            # Create an instance of the struct
+            WF[i] = WFConstructor(userdata)
+        end
+
+    return WF
 end #generateWF
     
-# Constructor function to create instances of the struct Windfarm
 function WFConstructor(userdata::OrderedDict{String, Any})
+# Constructor function to create instances of the struct Windfarm
     args = (userdata[arg] for arg in keys(userdata)) #Get all fields within the dictionary
     return Windfarm(args...)                         #Pass them one by one to the strtuct definition
 end #WFConstructor
 
-# Initiate template struct, generation function.
-# Initialises all variables to be assigned from the input files.
+
 mutable struct Windfarm
+#Input struct definition
     ##########      (1) Wind farm data         ######################
         # Name of the wind Farm
         name::String;
@@ -80,6 +81,17 @@ mutable struct Windfarm
         Rotor_Res::Int;               #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
 
     ##########      (6) Graphical output       ######################
+        # Simple plots, no further computation:
+        Plot_power::Bool;       #Plots power output of several turbines
+        Plot_windspeed::Bool;   #Plots average inflow windspeed of several turbines
+        Plot_turbulence::Bool;  #Plots average inflow turbulence of several turbines
+        Turbine_Identification::Vector{Int};    #Identify, which turbines should be included in the plot
+        Normalize_to::Int;                      #Specify which turbines power the plot should be normalised to (If no normalisation is wanted, type: 0)
+        # Advanced plots, advanced computation will commence
+        Plot_wind_field::Bool;      #Plots wind field for one simple case
+        Plot_turbulence_fiel::Bool; #Plots turbulence field for one simple case
+        Wind_Direction::Float64;    #Wind direction for plot (has to be a direction included during computation!)
+
         z::Int;    
         Z_Max::Float64;  #Maximum height
         Z_Min::Float64;  #Minimum height

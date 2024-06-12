@@ -1,16 +1,11 @@
-using TickTock, MAT
-#Excecute PKG script, add/ update all neccecary packages can be turned of after first run
-include("02_Modules/PKG_Manager.jl")
-#Read all input files & create struct array of the data
-include("02_Modules/Input_Processing.jl")  #Precompile module with relevant functions
-#Compute / Optimise as requested in each input file 
-include("02_Modules/Initialisation_Module.jl") #Include module which contains initialisation of computational arrays -> Needed for every operation.
-include("02_Modules/SimpleComputation.jl")
-using .SimpleComputation
-using .Input_Processing
-using .Initialisation_Module
+include("02_Modules/PKG_Manager.jl")            #pck manager (for own overiew -> !!to be deleted!! 
+include("02_Modules/Input_Processing.jl")       #Module to process input data
+include("02_Modules/Initialisation_Module.jl")  #Module for array initialisation/ space preallocation
+include("02_Modules/SimpleComputation.jl")      #Module for simple computation.
+include("02_Modules/Postprocessing.jl")
+using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Postprocessing, TickTock, MAT
 
-function Qwyn()
+function Qwyn_Simple()
 #=  This Script excexutes Qwyn. 
     Inputs are taken from 01_Inputs.
     All function blocks can be found in 02_Modules
@@ -30,45 +25,50 @@ function Qwyn()
         
         println("..loading turbine data..")
         LoadTurbineDATA!(WindFarm, CS)          #Update Input & computation structs with provided power & thrust curves
+        
         println("..loading atmospheric data..")
         LoadAtmosphericData!(WindFarm,CS)       #Update Input & computation structs with atmospheric data (wind shear profile, wind rose etc.)
+        
         tock()
         tick()
+
         # Iterating over turbine rows
         i=0
         println("Starting iterative computation...")
         while CS.zeta > 10^-3
             i=i+1
             println("Iteration ", i)
-            #Compute single wake effect
-            Ishihara_WakeModel!(WindFarm, CS)  #Compute wakes of single turbines
-            #Compute mixed wake
-            Superposition!(WindFarm, CS)
-            #Evaluate new inflow data
-            getTurbineInflow!(WindFarm, CS) 
-            #Evaluate new operation properties
-            getNewThrustandPower!(WindFarm, CS)
+            
+            Ishihara_WakeModel!(WindFarm, CS)   #Compute single wake effect
+
+            Superposition!(WindFarm, CS)        #Compute mixed wake
+            
+            getTurbineInflow!(WindFarm, CS)     #Evaluate new inflow data
+            
+            getNewThrustandPower!(WindFarm, CS) #Evaluate new operation properties
         end
-            #Compute total power of the wind farm 
-            getTotalPower!(CS)
+            
+        getTotalPower!(CS)  #Compute total power of the wind farm 
         println("...computation finished!")
         tock()
 
+        println("Plots on the way...")
+        SimplePlots(WindFarm, CS)
+        println("...finished!")
 
+                                ## Temporary stuff     
+                                    # Convert the struct to a dictionary
+                                    CS.Interp_Ct=0
+                                    CS.Interp_P=0
+                                struct_dict = Dict{String, Any}(string.(propertynames(CS)) .=> getfield.(Ref(CS), propertynames(CS)))
+                                struct_dict2 = Dict{String, Any}(string.(propertynames(WindFarm)) .=> getfield.(Ref(WindFarm), propertynames(WindFarm)))
 
-    ## Temporary stuff     
-        # Convert the struct to a dictionary
-        CS.Interp_Ct=0
-        CS.Interp_P=0
-    struct_dict = Dict{String, Any}(string.(propertynames(CS)) .=> getfield.(Ref(CS), propertynames(CS)))
-    struct_dict2 = Dict{String, Any}(string.(propertynames(WindFarm)) .=> getfield.(Ref(WindFarm), propertynames(WindFarm)))
-
-    # Specify the filename for the .mat file
-    filename = "99_PlotWMATLAB/WindFarmCS_NewCoordinateSys.mat"
-    filename2 = "99_PlotWMATLAB/WindFarmWF_NewCoordinateSys.mat"
-    # Save the struct to the .mat file
-    matwrite(filename, struct_dict)
-    matwrite(filename2, struct_dict2)
+                                # Specify the filename for the .mat file
+                                filename = "99_PlotWMATLAB/WindFarmCS_NewCoordinateSys.mat"
+                                filename2 = "99_PlotWMATLAB/WindFarmWF_NewCoordinateSys.mat"
+                                # Save the struct to the .mat file
+                                matwrite(filename, struct_dict)
+                                matwrite(filename2, struct_dict2)
 
     global CS
     end
@@ -76,4 +76,24 @@ function Qwyn()
     return WF, CS;
 end#Qwyn
 
+function Qwyn_AEP()
+#= -> Logic: To be done -> Using different functions for different tasks.
 
+1) Qwyn_Simple
+2) Qwyn_AEP
+
+( 3) Qwyn_Optimise_AEP
+4) Qwyn_Optimise_Yaw ) => Could be written by a separate user 
+
+Idea: Possible to define a functon which can go without input (default) or with input -> when called by another function.
+Meaning: If the user wants to compute an AEP. The AEP function simply calls the "Qwyn_Simple" function several times.
+
+Followup Idea: 
+Define a second "Qwyn_Simple". For example "Qwyn_Simple_internal_use" --> can be called by other function such as "Qwyn_AEP". 
+Here, the structs WindFarm & CS can be passed directly. without having to process the input data again and initalise matrices.
+
+Meaning for Input file:
+The Input file will, hence, be reduced to physical & numerical settings.
+=#
+
+end#Qwyn_AEP()
