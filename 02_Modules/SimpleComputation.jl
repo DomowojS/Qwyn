@@ -14,16 +14,27 @@ function Ishihara_WakeModel!(WindFarm, CS)
     CS.Computation_Region_ID = (CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20 .* WindFarm.D) # Limit computation domain to reasonable scope
 
     # Representative wake width (sigma(x))
-    CS.sigma    .= CS.Computation_Region_ID .* (CS.k .* CS.XCoordinates./WindFarm.D .+ CS.epsilon) .* WindFarm.D; # Compute wake width of all turbines
+    CS.sigma .= CS.Computation_Region_ID .* (CS.k .* CS.XCoordinates./WindFarm.D .+ CS.epsilon) .* WindFarm.D; # Compute wake width of all turbines
     
-   
-    if WindFarm.Meandering == true 
+    # Compute correction terms & convection velocity if needed
+    if WindFarm.Meandering == true 	|| WindFarm.Superpos == "Momentum_Conserving"
+
+        CS.u_c_vec = comp_ConvectionVelocity(CS.tmp, CS.u_c_vec, CS.Ct_vec, WindFarm.D, CS.sigma, CS.u_0_vec)
+
+        # Only for meandering model
+        if WindFarm.Meandering == true
         # run meandering correction
-        CS.psi, CS.Lambda, CS. sigma_m = Meandering_Correction(CS.psi, CS.Lambda, CS.TI_0_vec, CS.u_0_vec, CS.ZCoordinates, CS.XCoordinates, CS.u_0_vec)
+        CS.psi, CS.Lambda, CS.sigma_m = Meandering_Correction(CS.sigma_m, CS.psi, CS.Lambda, CS.TI_0_vec, CS.u_0_vec, CS.ZCoordinates, CS.XCoordinates, CS.u_c_vec)
+        # Corrected velocity deficit
+        CS.Delta_U  .=  CS.Computation_Region_ID .* ((1 ./ (CS.a .+ CS.b .* CS.XCoordinates./WindFarm.D .+ CS.c .* (1 .+ CS.XCoordinates./WindFarm.D).^-2).^2) .* (1 .+ (CS.sigma_m./CS.sigma).^2).^-0.5 .* exp.(-CS.r.^2 ./(2 .* (CS.sigma.^2 .+ CS.sigma_m.^2))) .* CS.u_0_vec);# Compute velocity deficit
+    	else
+        # Velocity deficit without correction
+        CS.Delta_U  .=  CS.Computation_Region_ID .* ((1 ./ (CS.a .+ CS.b .* CS.XCoordinates./WindFarm.D .+ CS.c .* (1 .+ CS.XCoordinates./WindFarm.D).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.u_0_vec);# Compute velocity deficit
+        end
     else
 
-    # Velocity deficit without corrections
-    CS.Delta_U  .=  CS.Computation_Region_ID .* ((1 ./ (CS.a .+ CS.b .* CS.XCoordinates./WindFarm.D .+ CS.c .* (1 .+ CS.XCoordinates./WindFarm.D).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.u_0_vec);# Compute velocity deficit
+        # Velocity deficit without corrections
+        CS.Delta_U  .=  CS.Computation_Region_ID .* ((1 ./ (CS.a .+ CS.b .* CS.XCoordinates./WindFarm.D .+ CS.c .* (1 .+ CS.XCoordinates./WindFarm.D).^-2).^2) .* exp.(-CS.r.^2 ./(2 .* CS.sigma.^2)) .* CS.u_0_vec);# Compute velocity deficit
     end
 
     #Rotor-added turbulence
@@ -50,7 +61,7 @@ function ComputeEmpiricalVars(Ct::Array{Float64}, TI_0_vec::Array{Float64}, k::A
     return k, epsilon, a, b, c, d, e, f
 end#ComputeEmpiricalVars
 
-function Meandering_Correction(psi::Array{Float64}, Lambda::Array{Float64}, TI_0_vec::Array{Float64}, u_0_vec::Array{Float64}, ZCoordinates::Array{Float64}, XCoordinates::Array{Float64}, u_c_vec::Array{Float64})
+function Meandering_Correction(sigma_m::Array{Float64}, psi::Array{Float64}, Lambda::Array{Float64}, TI_0_vec::Array{Float64}, u_0_vec::Array{Float64}, ZCoordinates::Array{Float64}, XCoordinates::Array{Float64}, u_c_vec::Array{Float64})
 # Compute the meandering correction according to the Braunbehrens & Segalini model (2019) 
     #Compute fluctuation intensity
     psi     .= 0.7.*TI_0_vec.*u_0_vec    
@@ -60,6 +71,15 @@ function Meandering_Correction(psi::Array{Float64}, Lambda::Array{Float64}, TI_0
     sigma_m .= sqrt.((2 .* psi .* Lambda.^2) .* ((XCoordinates./(u_c_vec.*Lambda)) .+ exp.(-XCoordinates./(u_c_vec.*Lambda)) .- 1))  
     return psi, Lambda, sigma_m          
 end#Meandering_Correction
+
+function comp_ConvectionVelocity(tmp, u_c_vec, Ct, D, sigma, u_0_vec)
+# Compute local convection velocity of each turbine
+    # Term within the sqrt. expression
+    tmp = (1 .- ((Ct.*D^2)./(8 .* sigma.^2)))
+    tmp[tmp.==-Inf] .= 0 #Correction (-Inf appears for those points which should not be computed, since they are dowmstream)
+    u_c_vec .= (0.5 .+ 0.5 .* sqrt.(tmp)) .* u_0_vec
+    return u_c_vec
+end#comp_ConvectionVelocity
 
 function Superposition!(WindFarm, CS)
 # Compute mixed wake properties
@@ -72,7 +92,17 @@ function Superposition!(WindFarm, CS)
         ### IMPLEMENT Height Profile for TI_a -> (WindFarm.TI_a.*WindFarm.u_ambient).^2 needs to be height related and ./WindFarm.u_ambient;, too!
         CS.TI_Farm .= sqrt.((WindFarm.TI_a.*WindFarm.u_ambient).^2 .+ sum((CS.Delta_TI.*CS.u_0_vec).^2, dims=3))./WindFarm.u_ambient;
     elseif WindFarm.Superpos == "Momentum_Conserving"
-        CS.U_Farm .= CS.Delta_U;
+        #Compute global wake convection velocity
+        if CS.i == 1 #For first iteration U_c_Farm gets initial conditions
+            CS.U_c_Farm=CS.u_c_vec;
+
+        else
+
+            CS.U_Farm .= CS.Delta_U;
+    
+        end
+        
+        
     end
 end#Superposition
 

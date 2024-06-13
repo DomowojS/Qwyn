@@ -10,7 +10,7 @@ export SimplePlots
 
 function SimplePlots(WindFarm, CS)
 #This function plots all simple requested plots from the input file    
-    
+    if WindFarm.Plot_power == true
     # Power output plot
         # Extract the indication
         indication = WindFarm.Turbine_Identification 
@@ -74,7 +74,8 @@ function SimplePlots(WindFarm, CS)
         end
         # Display the plot
     display(plot)
-
+    end
+    if WindFarm.Plot_windspeed == true
     # Wind speed plot
         # Extract the indication
         indication = WindFarm.Turbine_Identification 
@@ -138,7 +139,8 @@ function SimplePlots(WindFarm, CS)
         end
         # Display the plot
     display(plot1)
-
+    end
+    if WindFarm.Plot_turbulence == true
     # Turbulence intensity plot
         # Extract the indication
         indication = WindFarm.Turbine_Identification 
@@ -202,7 +204,7 @@ function SimplePlots(WindFarm, CS)
         end
         # Display the plot
     display(plot2)
-
+    end
 
 end#SimplePlots
 

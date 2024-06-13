@@ -19,7 +19,7 @@ userdata = OrderedDict{String, Any}(
     #Use either 3.1 for single computation OR 3.2 for AEP computation
     # (3.1) Single computatiosn 
     #       This section is only used for single case computation    
-    "u_ambient" => 15,      # [m/s] Ambient wind speed
+    "u_ambient" => 8,      # [m/s] Ambient wind speed
     "alpha"     => 270,     # [°] Geographical direction of the wind. -> N == 0°
     "TI_a"      => 0.07,    # [-] Ambient turbulence intensity in [-]
     "z_Surf"    => 0.005,   # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
@@ -35,25 +35,25 @@ userdata = OrderedDict{String, Any}(
     
     ## Advanced settings:
     #Superposition Method
-    "Superpos"  => "Linear_Rotorbased", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
+    "Superpos"  => "Momentum_Conserving", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
                                         #Possible inputs: "Linear_Rotorbased", "Momentum_Conserving"
     #Correction Models
-    "Meandering"=> false,                #Meandering correction as proposed by Braunbehrens & Segalini (2019).
+    "Meandering"=> true,                #Meandering correction as proposed by Braunbehrens & Segalini (2019).
 
     ##########      (5) Numerical parameters   ######################
     "Dimensions"            => "3D",        #Choose dimensions resolution. 1) Three dimensional space or 2) two dimansional plane at Hub height.
                                             #Possible inputs: "3D", "2D"
-    "Rotor_Discretization"  => "fibonacci", #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
-                                            #Possible inputs: "gridded", "fibonacci"
+    "Rotor_Discretization"  => "fibonacci",   #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
+                                            #Possible inputs: "gridded", "fibonacci" !!! Gridded has to be checked and corrected/ Thrown out
     "Rotor_Res"             => 10,          #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
 
     ##########      (6) Graphical output       ######################
     # Simple plots, no further computation:
-    "Plot_power"        => true,    #Plots power output of several turbines
-    "Plot_windspeed"    => true,    #Plots average inflow windspeed of several turbines
-    "Plot_turbulence"   => true,    #Plots average inflow turbulence of several turbines
+    "Plot_power"        => false,    #Plots power output of several turbines
+    "Plot_windspeed"    => false,   #Plots average inflow windspeed of several turbines
+    "Plot_turbulence"   => false,   #Plots average inflow turbulence of several turbines
     "Turbine_Identification"    => [41, 42, 43, 44, 45, 46, 47, 48, 49, 50], #Identify, which turbines should be included in the plot
-    "Normalize_to"              => 0,                               #Specify which turbines power the plot should be normalised to (If no normalisation is wanted, type: 0)
+    "Normalize_to"              => 41,                               #Specify which turbines power the plot should be normalised to (If no normalisation is wanted, type: 0)
     # Advanced plots, advanced computation will commence
     "Plot_wind_field"       => false,   #Plots wind field for one simple case
     "Plot_turbulence_field" => false,   #Plots turbulence field for one simple case

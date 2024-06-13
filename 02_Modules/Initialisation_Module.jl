@@ -58,8 +58,8 @@ function initCompArrays(WindFarm)
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
                             zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(1,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N),
-                            similar(XCoordinate, Bool), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
-                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 100
+                            similar(XCoordinate, Bool), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
+                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 100, 0, zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N)
                         )
  
     return WindFarm, CS
@@ -232,7 +232,8 @@ mutable struct ComputationStruct
     Delta_TI::Array{Float64,3}; #Rotor-added turbulence
     Computation_Region_ID::Array{Bool,3}; #ID for limiting computation of the wake region
     #Arrays for Superposition & Meandering
-    u_c_vec::Array{Float64,3};  #Convection velocity
+    u_c_vec::Array{Float64,3};  #Logacl convection velocity (for each turbine)
+    U_c_Farm::Array{Float64,3}; #Global convection velocity (on farm scale)
     #Arrays exclusively for Meandering
     psi::Array{Float64,3};      #fluctuation intensity
     Lambda::Array{Float64,3};   #Integral length scale of representative eddy
@@ -241,7 +242,10 @@ mutable struct ComputationStruct
     U_Farm::Array{Float64,3};
     TI_Farm::Array{Float64,3};
     #Computation Parameters
-    zeta::Float64 # termination criterion
+    zeta::Float64; # termination criterion
+    i::Int;        # iteration counter
+    #Temporary computation help
+    tmp::Array{Float64,3};
 end #mutable struct "ComputationStruct"
 
 end #Module

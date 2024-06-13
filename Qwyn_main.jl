@@ -33,10 +33,9 @@ function Qwyn_Simple()
         tick()
 
         # Iterating over turbine rows
-        i=0
         println("Starting iterative computation...")
         while CS.zeta > 10^-3
-            i=i+1
+            CS.i=CS.i+1
             println("Iteration ", i)
             
             Ishihara_WakeModel!(WindFarm, CS)   #Compute single wake effect
