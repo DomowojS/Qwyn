@@ -36,7 +36,7 @@ function Qwyn_Simple()
         println("Starting iterative computation...")
         while CS.zeta > 10^-3
             CS.i=CS.i+1
-            println("Iteration ", i)
+            println("Iteration ", CS.i)
             
             Ishihara_WakeModel!(WindFarm, CS)   #Compute single wake effect
 

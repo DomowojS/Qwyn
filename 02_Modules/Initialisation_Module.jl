@@ -58,8 +58,8 @@ function initCompArrays(WindFarm)
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
                             zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(1,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N),
-                            similar(XCoordinate, Bool), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
-                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 100, 0, zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N)
+                            similar(XCoordinate, Bool), zeros(WindFarm.N,1,WindFarm.N), zeros(WindFarm.N,1,1), zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
+                            zeros(WindFarm.N,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,1), 100, 0, zeros(WindFarm.N,1,WindFarm.N)
                         )
  
     return WindFarm, CS
@@ -235,12 +235,12 @@ mutable struct ComputationStruct
     u_c_vec::Array{Float64,3};  #Logacl convection velocity (for each turbine)
     U_c_Farm::Array{Float64,3}; #Global convection velocity (on farm scale)
     #Arrays exclusively for Meandering
-    psi::Array{Float64,3};      #fluctuation intensity
+    psi::Array{Float64,3};      #fluctuation intensitys
     Lambda::Array{Float64,3};   #Integral length scale of representative eddy
     sigma_m::Array{Float64,3};  #wake width correction parameter
     #Arrays needed to superimpose
-    U_Farm::Array{Float64,3};
-    TI_Farm::Array{Float64,3};
+    U_Farm::Array{Float64,3};       #Final superimposed result for Velocity
+    TI_Farm::Array{Float64,3};      #Final superimposed result for turbulence intensity
     #Computation Parameters
     zeta::Float64; # termination criterion
     i::Int;        # iteration counter

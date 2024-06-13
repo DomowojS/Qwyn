@@ -61,6 +61,15 @@ function ComputeEmpiricalVars(Ct::Array{Float64}, TI_0_vec::Array{Float64}, k::A
     return k, epsilon, a, b, c, d, e, f
 end#ComputeEmpiricalVars
 
+function comp_ConvectionVelocity(tmp, u_c_vec, Ct, D, sigma, u_0_vec)
+# Compute local convection velocity of each turbine
+    # Term within the sqrt. expression
+    tmp = (1 .- ((Ct.*D^2)./(8 .* sigma[:,1:1,:].^2)))
+    tmp[tmp.==-Inf] .= 0 #Correction (-Inf appears for those points which should not be computed, since they are dowmstream)
+    u_c_vec .= (0.5 .+ 0.5 .* sqrt.(tmp)) .* u_0_vec
+    return u_c_vec
+end#comp_ConvectionVelocity
+
 function Meandering_Correction(sigma_m::Array{Float64}, psi::Array{Float64}, Lambda::Array{Float64}, TI_0_vec::Array{Float64}, u_0_vec::Array{Float64}, ZCoordinates::Array{Float64}, XCoordinates::Array{Float64}, u_c_vec::Array{Float64})
 # Compute the meandering correction according to the Braunbehrens & Segalini model (2019) 
     #Compute fluctuation intensity
@@ -72,38 +81,34 @@ function Meandering_Correction(sigma_m::Array{Float64}, psi::Array{Float64}, Lam
     return psi, Lambda, sigma_m          
 end#Meandering_Correction
 
-function comp_ConvectionVelocity(tmp, u_c_vec, Ct, D, sigma, u_0_vec)
-# Compute local convection velocity of each turbine
-    # Term within the sqrt. expression
-    tmp = (1 .- ((Ct.*D^2)./(8 .* sigma.^2)))
-    tmp[tmp.==-Inf] .= 0 #Correction (-Inf appears for those points which should not be computed, since they are dowmstream)
-    u_c_vec .= (0.5 .+ 0.5 .* sqrt.(tmp)) .* u_0_vec
-    return u_c_vec
-end#comp_ConvectionVelocity
+
 
 function Superposition!(WindFarm, CS)
 # Compute mixed wake properties
+    #Velocity deficit
     if WindFarm.Superpos == "Linear_Rotorbased"
-        #Velocity deficit
+        #Compute linear rotorbased sum
         CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum(CS.Delta_U, dims=3);
-        CS.U_Farm[CS.U_Farm.<0].=0 #Filter of "negative" wind speeds at low heights
-
-        #Rotor-added turbulence
-        ### IMPLEMENT Height Profile for TI_a -> (WindFarm.TI_a.*WindFarm.u_ambient).^2 needs to be height related and ./WindFarm.u_ambient;, too!
-        CS.TI_Farm .= sqrt.((WindFarm.TI_a.*WindFarm.u_ambient).^2 .+ sum((CS.Delta_TI.*CS.u_0_vec).^2, dims=3))./WindFarm.u_ambient;
     elseif WindFarm.Superpos == "Momentum_Conserving"
         #Compute global wake convection velocity
-        if CS.i == 1 #For first iteration U_c_Farm gets initial conditions
-            CS.U_c_Farm=CS.u_c_vec;
-
-        else
-
-            CS.U_Farm .= CS.Delta_U;
-    
+        if CS.i == 1
+            #For first iteration U_c_Farm gets initial conditions
+            CS.U_c_Farm = maximum(CS.u_c_vec, dims=3);
+        else 
+            #For iteration >2 compute U_c_Farm from last iteration's result
+            CS.U_c_Farm .= sum(sum((CS.U_Farm .* (WindFarm.u_ambient_zprofile .- CS.U_Farm)), dims=1), dims=2) ./ sum(sum((WindFarm.u_ambient_zprofile .- CS.U_Farm), dims=1), dims=2);
         end
         
-        
+        #Compute weighted sum
+        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum(((CS.u_c_vec./CS.U_c_Farm) .* CS.Delta_U), dims=3);
+    else 
+        ERROR("Wrong choice of superposition method. Check 'Superpos' input. Possible entries: 'Linear_Rotorbased' and 'Momentum_Conserving'.")   
     end
+    CS.U_Farm[CS.U_Farm.<0].=0 #Filter of "negative" wind speeds at low heights
+
+    #Rotor-added turbulence
+    ### IMPLEMENT Height Profile for TI_a -> (WindFarm.TI_a.*WindFarm.u_ambient).^2 needs to be height related and ./WindFarm.u_ambient;, too!
+    CS.TI_Farm .= sqrt.((WindFarm.TI_a.*WindFarm.u_ambient).^2 .+ sum((CS.Delta_TI.*CS.u_0_vec).^2, dims=3))./WindFarm.u_ambient;
 end#Superposition
 
 
