@@ -45,6 +45,8 @@ function Qwyn_Simple()
             getTurbineInflow!(WindFarm, CS)     #Evaluate new inflow data
             
             getNewThrustandPower!(WindFarm, CS) #Evaluate new operation properties
+
+            computeTerminationCriterion!(WindFarm, CS) #Compute termination criterion
         end
             
         getTotalPower!(CS)  #Compute total power of the wind farm 

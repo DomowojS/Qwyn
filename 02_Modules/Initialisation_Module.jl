@@ -58,7 +58,7 @@ function initCompArrays(WindFarm)
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
                             zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(1,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N),
-                            similar(XCoordinate, Bool), zeros(WindFarm.N,1,WindFarm.N), zeros(WindFarm.N,1,1), zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
+                            similar(XCoordinate, Bool), zeros(WindFarm.N,1,WindFarm.N), zeros(WindFarm.N,1,1), zeros(WindFarm.N,1,1), zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
                             zeros(WindFarm.N,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,1), 100, 0, zeros(WindFarm.N,1,WindFarm.N)
                         )
  
@@ -234,6 +234,7 @@ mutable struct ComputationStruct
     #Arrays for Superposition & Meandering
     u_c_vec::Array{Float64,3};  #Logacl convection velocity (for each turbine)
     U_c_Farm::Array{Float64,3}; #Global convection velocity (on farm scale)
+    U_c_Farm_old::Array{Float64,3}; #Old global convection velocity from last iteration
     #Arrays exclusively for Meandering
     psi::Array{Float64,3};      #fluctuation intensitys
     Lambda::Array{Float64,3};   #Integral length scale of representative eddy

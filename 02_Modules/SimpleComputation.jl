@@ -4,7 +4,7 @@ Script to Process computation &/ optimisation
 
 module SimpleComputation
 using Statistics
-export Ishihara_WakeModel!, Superposition!, getTurbineInflow!, getNewThrustandPower!, getTotalPower!
+export Ishihara_WakeModel!, Superposition!, getTurbineInflow!, getNewThrustandPower!, getTotalPower!, computeTerminationCriterion!
 
 function Ishihara_WakeModel!(WindFarm, CS)
 # Compute single wake according to the Ishihara-Qian model (2018)
@@ -48,41 +48,6 @@ function Ishihara_WakeModel!(WindFarm, CS)
 end #Ishihara_Wakemodel
 #
 
-function ComputeEmpiricalVars(Ct::Array{Float64}, TI_0_vec::Array{Float64}, k::Array{Float64}, epsilon::Array{Float64}, a::Array{Float64}, b::Array{Float64}, c::Array{Float64}, d::Array{Float64}, e::Array{Float64}, f::Array{Float64})
-# Compute empirical parameters for the Ishihara WakeModel
-    k       .= 0.11 .* Ct.^1.07  .* TI_0_vec.^0.2 
-    epsilon .= 0.23 .* Ct.^-0.25 .* TI_0_vec.^0.17
-    a       .= 0.93 .* Ct.^-0.75 .* TI_0_vec.^0.17
-    b       .= 0.42 .* Ct.^0.6   .* TI_0_vec.^0.2
-    c       .= 0.15 .* Ct.^-0.25 .* TI_0_vec.^-0.7
-    d       .= 2.3  .* Ct.^1.2   .* TI_0_vec.^0.1
-    e       .= 1.0               .* TI_0_vec.^0.1
-    f       .= 0.7  .* Ct.^-3.2  .* TI_0_vec.^-0.45
-    return k, epsilon, a, b, c, d, e, f
-end#ComputeEmpiricalVars
-
-function comp_ConvectionVelocity(tmp, u_c_vec, Ct, D, sigma, u_0_vec)
-# Compute local convection velocity of each turbine
-    # Term within the sqrt. expression
-    tmp = (1 .- ((Ct.*D^2)./(8 .* sigma[:,1:1,:].^2)))
-    tmp[tmp.==-Inf] .= 0 #Correction (-Inf appears for those points which should not be computed, since they are dowmstream)
-    u_c_vec .= (0.5 .+ 0.5 .* sqrt.(tmp)) .* u_0_vec
-    return u_c_vec
-end#comp_ConvectionVelocity
-
-function Meandering_Correction(sigma_m::Array{Float64}, psi::Array{Float64}, Lambda::Array{Float64}, TI_0_vec::Array{Float64}, u_0_vec::Array{Float64}, ZCoordinates::Array{Float64}, XCoordinates::Array{Float64}, u_c_vec::Array{Float64})
-# Compute the meandering correction according to the Braunbehrens & Segalini model (2019) 
-    #Compute fluctuation intensity
-    psi     .= 0.7.*TI_0_vec.*u_0_vec    
-    #Compute integral length scale of representative eddy   
-    Lambda  .= (0.4 .* ZCoordinates) ./ psi
-    #Compute corrected wake width 
-    sigma_m .= sqrt.((2 .* psi .* Lambda.^2) .* ((XCoordinates./(u_c_vec.*Lambda)) .+ exp.(-XCoordinates./(u_c_vec.*Lambda)) .- 1))  
-    return psi, Lambda, sigma_m          
-end#Meandering_Correction
-
-
-
 function Superposition!(WindFarm, CS)
 # Compute mixed wake properties
     #Velocity deficit
@@ -90,19 +55,22 @@ function Superposition!(WindFarm, CS)
         #Compute linear rotorbased sum
         CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum(CS.Delta_U, dims=3);
     elseif WindFarm.Superpos == "Momentum_Conserving"
+        #Safe old convection velocity for termination criterion computation
+        CS.U_c_Farm_old .= CS.U_c_Farm
         #Compute global wake convection velocity
         if CS.i == 1
             #For first iteration U_c_Farm gets initial conditions
             CS.U_c_Farm = maximum(CS.u_c_vec, dims=3);
         else 
             #For iteration >2 compute U_c_Farm from last iteration's result
-            CS.U_c_Farm .= sum(sum((CS.U_Farm .* (WindFarm.u_ambient_zprofile .- CS.U_Farm)), dims=1), dims=2) ./ sum(sum((WindFarm.u_ambient_zprofile .- CS.U_Farm), dims=1), dims=2);
+            CS.U_c_Farm .= sum((CS.U_Farm .* (WindFarm.u_ambient_zprofile .- CS.U_Farm)), dims=2) ./ sum((WindFarm.u_ambient_zprofile .- CS.U_Farm), dims=2);
+            CS.U_c_Farm[isnan.(CS.U_c_Farm)] .= WindFarm.u_ambient #NaN filter. Reason: For turbines in inflow, the equations produces NaN since they feel no wake effect.
         end
         
         #Compute weighted sum
         CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum(((CS.u_c_vec./CS.U_c_Farm) .* CS.Delta_U), dims=3);
     else 
-        ERROR("Wrong choice of superposition method. Check 'Superpos' input. Possible entries: 'Linear_Rotorbased' and 'Momentum_Conserving'.")   
+        error("Wrong choice of superposition method. Check 'Superpos' input. Possible entries: 'Linear_Rotorbased' and 'Momentum_Conserving'.")   
     end
     CS.U_Farm[CS.U_Farm.<0].=0 #Filter of "negative" wind speeds at low heights
 
@@ -111,18 +79,12 @@ function Superposition!(WindFarm, CS)
     CS.TI_Farm .= sqrt.((WindFarm.TI_a.*WindFarm.u_ambient).^2 .+ sum((CS.Delta_TI.*CS.u_0_vec).^2, dims=3))./WindFarm.u_ambient;
 end#Superposition
 
-
 function getTurbineInflow!(WindFarm, CS) 
 # Evaluate new inflow data
     CS.u_0_vec_old .= CS.u_0_vec #Store old inflow data
     CS.u_0_vec .= reshape(mean(mean(CS.U_Farm, dims=3), dims=2), (1,1,WindFarm.N))    #Compute mean inflow velocity for each turbine
     CS.TI_0_vec .= reshape(mean(mean(CS.TI_Farm, dims=3), dims=2), (1,1,WindFarm.N))  #Compute mean Turbulence intensity for each turbine
-
-
-    # Compute termination criterion
-    CS.zeta = findmax(abs.(CS.u_0_vec.-CS.u_0_vec_old))[1]
 end#getTurbineInflow
-
 
 function getNewThrustandPower!(WindFarm, CS)
 # Compute new turbine properties
@@ -144,12 +106,53 @@ end
 function getTotalPower!(CS)
 # Compute total pwoer output of the wind farm
     CS.TotalPower = sum(CS.P_vec)
-end#getTotalPower
+end#getTotalPower#
 
-# Compute power output
+function computeTerminationCriterion!(WindFarm, CS)
+# Compute termination criterion zeta
+    if WindFarm.Superpos == "Linear_Rotorbased"
+    CS.zeta = findmax(abs.(CS.u_0_vec.-CS.u_0_vec_old))[1]
+    elseif WindFarm.Superpos == "Momentum_Conserving"
+    CS.zeta = findmax(abs.(CS.U_c_Farm.-CS.U_c_Farm_old))[1]
+    end 
+end#computeTerminationCriterion
 
 
+##### Subfunctions for single wake computation #######
 
-# Functions for single wake computation
-
+function ComputeEmpiricalVars(Ct::Array{Float64}, TI_0_vec::Array{Float64}, k::Array{Float64}, epsilon::Array{Float64}, a::Array{Float64}, b::Array{Float64}, c::Array{Float64}, d::Array{Float64}, e::Array{Float64}, f::Array{Float64})
+# Compute empirical parameters for the Ishihara WakeModel
+    k       .= 0.11 .* Ct.^1.07  .* TI_0_vec.^0.2 
+    epsilon .= 0.23 .* Ct.^-0.25 .* TI_0_vec.^0.17
+    a       .= 0.93 .* Ct.^-0.75 .* TI_0_vec.^0.17
+    b       .= 0.42 .* Ct.^0.6   .* TI_0_vec.^0.2
+    c       .= 0.15 .* Ct.^-0.25 .* TI_0_vec.^-0.7
+    d       .= 2.3  .* Ct.^1.2   .* TI_0_vec.^0.1
+    e       .= 1.0               .* TI_0_vec.^0.1
+    f       .= 0.7  .* Ct.^-3.2  .* TI_0_vec.^-0.45
+    return k, epsilon, a, b, c, d, e, f
+end#ComputeEmpiricalVars
+    
+function comp_ConvectionVelocity(tmp, u_c_vec, Ct, D, sigma, u_0_vec)
+# Compute local convection velocity of each turbine
+    # Term within the sqrt. expression
+    tmp = (1 .- ((Ct.*D^2)./(8 .* sigma[:,1:1,:].^2)))
+    tmp[tmp.==-Inf] .= 0    #Correction (-Inf appears for those points which should not be computed, since they are dowmstream)
+    tmp[tmp.<0] .= 0        #Correction (negative numbers appear due to incompatibility between Ishihara-Qian & convection velocity derivation for the near wake.)
+    u_c_vec .= (0.5 .+ 0.5 .* sqrt.(tmp)) .* u_0_vec
+    return u_c_vec
+end#comp_ConvectionVelocity
+    
+function Meandering_Correction(sigma_m::Array{Float64}, psi::Array{Float64}, Lambda::Array{Float64}, TI_0_vec::Array{Float64}, u_0_vec::Array{Float64}, ZCoordinates::Array{Float64}, XCoordinates::Array{Float64}, u_c_vec::Array{Float64})
+# Compute the meandering correction according to the Braunbehrens & Segalini model (2019) 
+    #Compute fluctuation intensity
+    psi     .= 0.7.*TI_0_vec.*u_0_vec    
+    #Compute integral length scale of representative eddy   
+    Lambda  .= (0.4 .* ZCoordinates) ./ psi
+    #Compute corrected wake width 
+    sigma_m .= sqrt.((2 .* psi .* Lambda.^2) .* ((XCoordinates./(u_c_vec.*Lambda)) .+ exp.(-XCoordinates./(u_c_vec.*Lambda)) .- 1))  
+    return psi, Lambda, sigma_m          
+end#Meandering_Correction
+    
+#####################################################
 end
