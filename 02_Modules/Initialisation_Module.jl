@@ -1,7 +1,7 @@
 # Module to initialise matrices and compute all necessary coordinates
 
 module Initialisation_Module
-using JLD2, Interpolations, LinearAlgebra
+using JLD2, Interpolations, LinearAlgebra, Random, StatsBase
 
 export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!
 
@@ -65,53 +65,6 @@ function initCompArrays(WindFarm)
     return WindFarm, CS
 
 end #initCompArrays
-
-function generate_rotor_grid(totalPoints::Int)
-# This function generates a grid of points in the Y-Z plane to represent the turbine's rotor's.
-
-    # Calculate approximate number of points per axis
-    numPointsPerAxis = ceil(Int, sqrt(totalPoints / π))
-    
-    # Create a sufficiently dense grid to ensure we get the desired number of points
-    x = range(-0.5, stop=0.5, length=numPointsPerAxis * 2)
-    y = range(-0.5, stop=0.5, length=numPointsPerAxis * 2)
-    X, Y = [xi for xi in x, yi in y], [yi for xi in x, yi in y]
-
-    # Flatten the grid matrices
-    X = vec(X)
-    Y = vec(Y)
-
-    # Calculate distance from the origin to each point
-    distances = sqrt.(X.^2 .+ Y.^2)
-
-    # Filter out points that are outside the rotorarea of radius 0.5
-    insiderotor = distances .<= 0.5
-
-    # Keep only the points inside the circle
-    Y = Y[insiderotor]
-    Z = X[insiderotor]
-
-    return Y, Z
-end #generate_rotor_grid
-
-function generate_fibonacci(totalPoints::Int)
-# This function generates a fibonacci-lattice grid of points int the Y-Z plane to represent the turbine's rotor's.
-    # Golden ratio
-    φ = (sqrt(5) + 1) / 2
-
-    # Generate points using the Fibonacci lattice method
-    indices = 1:totalPoints
-
-    # Calculate radii and angles
-    r = sqrt.(indices / totalPoints) * 0.5  # radius scaled to the circle with radius 0.5
-    θ = 2 * π * φ * indices
-
-    # Convert polar coordinates to Cartesian coordinates
-    Y = r .* cos.(θ)
-    Z = r .* sin.(θ)
-
-    return Y, Z
-end #generate_fibonacci
 
 function LoadTurbineDATA!(WindFarm, CS)
 #= This function loads all turbine data necessary for the computation
@@ -193,6 +146,92 @@ function LoadAtmosphericData!(WindFarm, CS)
  # Compute TI profile
     #TBDone!
 end #LoadAtmosphericData
+
+### Subfunctions & Structdefinitions #####
+function generate_rotor_grid(totalPoints::Int)
+# This function generates a grid of points in the Y-Z plane to represent the turbine's rotor's.
+    # Handle special cases for 1 to 4 points
+    if totalPoints == 1
+        return [0.0], [0.0]
+    elseif totalPoints == 2
+        angle = π / 2
+        return [0.5*cos(angle), -0.5*cos(angle)], [0.5*sin(angle), -0.5*sin(angle)]
+    elseif totalPoints == 3
+        angles = range(0, stop=2*π, length=4)[1:3]
+        return 0.5*cos.(angles), 0.5*sin.(angles)
+    elseif totalPoints == 4
+        angles = range(π/4, stop=2*π, length=5)[1:4]
+        return 0.5*cos.(angles), 0.5*sin.(angles)
+    end
+
+    # General case for totalPoints >= 5
+    radius = 0.5
+    numPointsPerAxis = ceil(Int, sqrt(4 * totalPoints / π))
+
+    # Create a sufficiently dense grid
+    x = range(-radius, stop=radius, length=numPointsPerAxis)
+    y = range(-radius, stop=radius, length=numPointsPerAxis)
+    X, Y = [xi for xi in x, yi in y], [yi for xi in x, yi in y]
+
+    # Flatten the grid matrices
+    X = vec(X)
+    Y = vec(Y)
+
+    # Calculate distance from the origin to each point
+    distances = sqrt.(X.^2 .+ Y.^2)
+
+    # Filter out points that are outside the rotor area of radius 0.5
+    insiderotor = distances .<= radius
+
+    # Keep only the points inside the circle
+    Y = Y[insiderotor]
+    Z = X[insiderotor]
+
+    # Adjust if we have fewer points than needed
+    while length(Y) < totalPoints
+        # Increase the grid density
+        numPointsPerAxis += 1
+        x = range(-radius, stop=radius, length=numPointsPerAxis)
+        y = range(-radius, stop=radius, length=numPointsPerAxis)
+        X, Y = [xi for xi in x, yi in y], [yi for xi in x, yi in y]
+        X = vec(X)
+        Y = vec(Y)
+        distances = sqrt.(X.^2 .+ Y.^2)
+        insiderotor = distances .<= radius
+        Y = Y[insiderotor]
+        Z = X[insiderotor]
+    end
+
+    # If we have more points than needed, sample without replacement to get the exact number
+    if length(Y) > totalPoints
+        indices = sample(1:length(Y), totalPoints, replace=false)
+        Y = Y[indices]
+        Z = Z[indices]
+    end
+
+    return Y, Z
+end # generate_rotor_grid
+
+    
+function generate_fibonacci(totalPoints::Int)
+# This function generates a fibonacci-lattice grid of points int the Y-Z plane to represent the turbine's rotor's.
+# Golden ratio
+φ = (sqrt(5) + 1) / 2
+
+# Generate points using the Fibonacci lattice method
+indices = 1:totalPoints
+
+# Calculate radii and angles
+r = sqrt.(indices / totalPoints) * 0.5  # radius scaled to the circle with radius 0.5
+θ = 2 * π * φ * indices
+
+# Convert polar coordinates to Cartesian coordinates
+Y = r .* cos.(θ)
+Z = r .* sin.(θ)
+
+return Y, Z
+end #generate_fibonacci
+
 
 mutable struct ComputationStruct
     #Definition of struct (preassignment of arrays & space)

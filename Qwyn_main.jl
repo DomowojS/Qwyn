@@ -57,20 +57,6 @@ function Qwyn_Simple()
         SimplePlots(WindFarm, CS)
         println("...finished!")
 
-                                #= Temporary stuff -> for saving to MAT and plotting in Matlab!    
-                                    # Convert the struct to a dictionary
-                                    CS.Interp_Ct=0
-                                    CS.Interp_P=0
-                                struct_dict = Dict{String, Any}(string.(propertynames(CS)) .=> getfield.(Ref(CS), propertynames(CS)))
-                                struct_dict2 = Dict{String, Any}(string.(propertynames(WindFarm)) .=> getfield.(Ref(WindFarm), propertynames(WindFarm)))
-
-                                # Specify the filename for the .mat file
-                                filename = "99_PlotWMATLAB/WindFarmCS_NewCoordinateSys.mat"
-                                filename2 = "99_PlotWMATLAB/WindFarmWF_NewCoordinateSys.mat"
-                                # Save the struct to the .mat file
-                                matwrite(filename, struct_dict)
-                                matwrite(filename2, struct_dict2)
-                                =#
     global CS
     end
 
@@ -96,5 +82,48 @@ function Qwyn_AEP()
     Meaning for Input file:
     The Input file will, hence, be reduced to physical & numerical settings.
 =#
+end
+
+function Qwyn_Optimiser()
+# Optimisation functions will be added here.
 
 end#Qwyn_AEP()
+
+#...more function to come?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                #= Temporary stuff -> for saving to MAT and plotting in Matlab!    
+                                    # Convert the struct to a dictionary
+                                    CS.Interp_Ct=0
+                                    CS.Interp_P=0
+                                struct_dict = Dict{String, Any}(string.(propertynames(CS)) .=> getfield.(Ref(CS), propertynames(CS)))
+                                struct_dict2 = Dict{String, Any}(string.(propertynames(WindFarm)) .=> getfield.(Ref(WindFarm), propertynames(WindFarm)))
+
+                                # Specify the filename for the .mat file
+                                filename = "99_PlotWMATLAB/WindFarmCS_NewCoordinateSys.mat"
+                                filename2 = "99_PlotWMATLAB/WindFarmWF_NewCoordinateSys.mat"
+                                # Save the struct to the .mat file
+                                matwrite(filename, struct_dict)
+                                matwrite(filename2, struct_dict2)
+                                =#

@@ -11,7 +11,7 @@ userdata = OrderedDict{String, Any}(
     "y_vec" => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 49, 49, 49, 49, 49, 49, 49, 49, 49, 49],     #zeros(80,),         #Y-Coordinates [0, 0, 0, 0, 0, 0],
 
     ##########      (2) Turbine data           ######################
-    "Yaw" => 270 .+ zeros(80,),     # Yaw angle of the turbines (In geographical DEG)
+    "Yaw" => 90 .+ zeros(80,),     # Yaw angle of the turbines (In geographical DEG)
     "Turbine_Type" => "VestasV80",  #Turbine Type. One type for the whole wind farm. 
                                     #Possible Inputs: "VestasV80", "NREL_5MW", "DTU_10MW", "IEA_15MW"
 
@@ -20,7 +20,7 @@ userdata = OrderedDict{String, Any}(
     # (3.1) Single computatiosn 
     #       This section is only used for single case computation    
     "u_ambient" => 8,      # [m/s] Ambient wind speed
-    "alpha"     => 270,     # [°] Geographical direction of the wind. -> N == 0°
+    "alpha"     => 90,     # [°] Geographical direction of the wind. -> N == 0°
     "TI_a"      => 0.045,    # [-] Ambient turbulence intensity in [-]
     "z_Surf"    => 0.005,   # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
     "z_r"       => 70.0,    # [m] Height the average wind speed "u_ambient" was measured. If not known, choose z_r = 10
@@ -35,10 +35,10 @@ userdata = OrderedDict{String, Any}(
     
     ## Advanced settings:
     #Superposition Method
-    "Superpos"  => "Momentum_Conserving", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
+    "Superpos"  => "Linear_Rotorbased", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
                                         #Possible inputs: "Linear_Rotorbased", "Momentum_Conserving"
     #Correction Models
-    "Meandering"=> false,                #Meandering correction as proposed by Braunbehrens & Segalini (2019).
+    "Meandering"=> true,                #Meandering correction as proposed by Braunbehrens & Segalini (2019).
 
     ##########      (5) Numerical parameters   ######################
     "Dimensions"            => "3D",        #Choose dimensions resolution. 1) Three dimensional space or 2) two dimansional plane at Hub height.
