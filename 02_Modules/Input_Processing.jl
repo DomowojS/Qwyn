@@ -8,8 +8,8 @@ using Pkg, FileIO, Parameters, InteractiveUtils, DataStructures, Revise
 
 export generateWF, ComputationData
 
-# Function to generate struct instances from files in Input folder
 function generateWF(prefix::AbstractString, folder::AbstractString)
+#Function to generate struct instances from files in Input folder
     # Get a list of all files in the Inputfolder
     files = readdir(folder)
     # Filter out files that start with the given prefix
@@ -18,25 +18,26 @@ function generateWF(prefix::AbstractString, folder::AbstractString)
     n=length(script_files);   
     WF=Vector{Windfarm}(undef, n);  # Creating array to contain all input data (of the type of Windfarm - mutable struct)
 
-    # Iterate over all input files and store them in struct array
-    for i=1:n
-        # User Input
-        include(joinpath(folder, script_files[i])) #Overwrite user data after each iteration
-        # Create an instance of the struct
-        WF[i] = WFConstructor(userdata)
-    end
-return WF
+        # Iterate over all input files and store them in struct array
+        for i=1:n
+            # User Input
+            include(joinpath(folder, script_files[i])) #Overwrite user data after each iteration
+            # Create an instance of the struct
+            WF[i] = WFConstructor(userdata)
+        end
+
+    return WF
 end #generateWF
     
-# Constructor function to create instances of the struct Windfarm
 function WFConstructor(userdata::OrderedDict{String, Any})
+# Constructor function to create instances of the struct Windfarm
     args = (userdata[arg] for arg in keys(userdata)) #Get all fields within the dictionary
     return Windfarm(args...)                         #Pass them one by one to the strtuct definition
 end #WFConstructor
 
-# Initiate template struct, generation function.
-# Initialises all variables to be assigned from the input files.
+
 mutable struct Windfarm
+#Input struct definition
     ##########      (1) Wind farm data         ######################
         # Name of the wind Farm
         name::String;
@@ -72,23 +73,38 @@ mutable struct Windfarm
         AEPComp::Bool;              # For the estimation of the farms AEP
     ## Advanced settings:
     #Superposition Method
-        Linear_Rotorbased::Bool;    # Superposition using linear rotorbased summation for velocity deficit
-        Momentum_Conserving::Bool;  # Superposition using momentum conserving approach for velocity deficit
+        Superpos::String;    # Superposition using linear rotorbased summation for velocity deficit
+    #Correction Models
+        Meandering::Bool;    #Meandering correction as proposed by Braunbehrens & Segalini (2019).
+
     ##########      (5) Numerical parameters   ######################
-        Y_Res::Int;
-        Z_Res::Int;     #Height resolution (number of height levels computed)
-        Z_Max::Float64; #Maximum height
-        Z_Min::Float64; #Minimum height
+        Dimensions::String;           #Choose dimensions resolution.
+        Rotor_Discretization::String; #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). Possible inputs: "gridded", "fibonacci"
+        Rotor_Res::Int;               #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
 
     ##########      (6) Graphical output       ######################
-        z::Int;
+        # Simple plots, no further computation:
+        Plot_power::Bool;       #Plots power output of several turbines
+        Plot_windspeed::Bool;   #Plots average inflow windspeed of several turbines
+        Plot_turbulence::Bool;  #Plots average inflow turbulence of several turbines
+        Turbine_Identification::Vector{Int};    #Identify, which turbines should be included in the plot
+        Normalize_to::Int;                      #Specify which turbines power the plot should be normalised to (If no normalisation is wanted, type: 0)
+        # Advanced plots, advanced computation will commence
+        Plot_wind_field::Bool;      #Plots wind field for one simple case
+        Plot_turbulence_fiel::Bool; #Plots turbulence field for one simple case
+        Wind_Direction::Float64;    #Wind direction for plot (has to be a direction included during computation!)
+
+        z::Int;    
+        Z_Max::Float64;  #Maximum height
+        Z_Min::Float64;  #Minimum height
+
     ##########   Literature Input              ######################
         D::Float64;             # Turbine diameter in [m]
         H::Float64;             # Hub height in [m]
         P_Input::Matrix{Float64};    # Power coefficient - defined as .txt in "03_Turbine_Data"
         Ct_Input::Matrix{Float64};    # Thrust coefficient - defined as .txt in "03_Turbine_data"
         #Atmospheric data placeholders:
-        u_ambient_zprofile::Array{Float64,4}; # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
+        u_ambient_zprofile::Array{Float64,3}; # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
 end # mutable struct Windfarm
 
 end #module
