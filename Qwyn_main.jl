@@ -57,7 +57,9 @@ function Qwyn_Simple()
         SimplePlots(WindFarm, CS)
         println("...finished!")
 
-    global CS
+    #global CS
+    #TMP=reshape(CS.P_vec[[4, 13, 22, 31, 40]], 5)
+    #Base.print_matrix(stdout, TMP)
     end
 
     return WF, CS;

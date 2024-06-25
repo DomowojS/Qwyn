@@ -45,8 +45,10 @@ function SimplePlots(WindFarm, CS)
             min, = findmin(y)
             max, = findmax(y)
             dif= max - min
-            min = min- 0.05dif
-            max = max+ 0.05dif
+            #min = min- 0.05dif
+            #max = max+ 0.05dif
+            min = 0
+            max = 1
                 # Create the plot
                 plot = Plot(
                     scatter(

@@ -11,11 +11,11 @@ function Ishihara_WakeModel!(WindFarm, CS)
     CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f = ComputeEmpiricalVars(CS.Ct_vec, CS.TI_0_vec, 
                                                             CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f); # Compute empirical values
 
-    CS.Computation_Region_ID = (CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20 .* WindFarm.D) # Limit computation domain to reasonable scope
+    CS.Computation_Region_ID = (CS.XCoordinates .> 0.1e-10) .& (CS.YCoordinates .< 20 .* WindFarm.D) .& (CS.Ct_vec .> 0) # Limit computation domain to reasonable scope
 
     # Representative wake width (sigma(x))
     CS.sigma .= CS.Computation_Region_ID .* (CS.k .* CS.XCoordinates./WindFarm.D .+ CS.epsilon) .* WindFarm.D; # Compute wake width of all turbines
-    
+    [:,:,vec(CS.Ct_vec .> 0)]
     # Compute correction terms & convection velocity if needed
     if WindFarm.Meandering == true 	|| WindFarm.Superpos == "Momentum_Conserving"
 
@@ -54,21 +54,36 @@ function Superposition!(WindFarm, CS)
     if WindFarm.Superpos == "Linear_Rotorbased"
         #Compute linear rotorbased sum
         CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum(CS.Delta_U, dims=3);
+
     elseif WindFarm.Superpos == "Momentum_Conserving"
-        #Safe old convection velocity for termination criterion computation
-        CS.U_c_Farm_old .= CS.U_c_Farm
+        
+        #For first iteration U_c_Farm gets initial conditions
+        CS.U_c_Farm = maximum(CS.u_c_vec, dims=3);
+        CS.U_c_Farm[CS.U_c_Farm .== 0] .= 1;         #Correction, to prevent NaN in next computation step.
+        #Compute weighting factor
+        CS.weighting_Factor .= (CS.u_c_vec./CS.U_c_Farm)
+        CS.weighting_Factor[CS.Delta_U .< (0.1 .* WindFarm.u_ambient_zprofile)] .= 1 #correction. For u_i < 0.1 of ambient wind speed -> no weighting is considered.
+        #Compute weighted sum
+        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum((CS.weighting_Factor .* CS.Delta_U), dims=3);
+        
         #Compute global wake convection velocity
-        if CS.i == 1
-            #For first iteration U_c_Farm gets initial conditions
-            CS.U_c_Farm = maximum(CS.u_c_vec, dims=3);
-        else 
+        i=0
+        while any(abs.((CS.U_c_Farm_old .- CS.U_c_Farm) ./ CS.U_c_Farm) .>= 0.001) == true #any(abs.((CS.U_c_Farm_old .- CS.U_c_Farm) ./ CS.U_c_Farm) .>= 0.001) == true
+            i=i+1
+            #Safe old convection velocity for termination criterion computation
+            CS.U_c_Farm_old .= CS.U_c_Farm
+            CS.U_Farm_old .= CS.U_Farm
             #For iteration >2 compute U_c_Farm from last iteration's result
             CS.U_c_Farm .= sum((CS.U_Farm .* (WindFarm.u_ambient_zprofile .- CS.U_Farm)), dims=2) ./ sum((WindFarm.u_ambient_zprofile .- CS.U_Farm), dims=2);
             CS.U_c_Farm[isnan.(CS.U_c_Farm)] .= WindFarm.u_ambient #NaN filter. Reason: For turbines in inflow, the equations produces NaN since they feel no wake effect.
-        end
-        
-        #Compute weighted sum
-        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum(((CS.u_c_vec./CS.U_c_Farm) .* CS.Delta_U), dims=3);
+            #Compute weighting factor
+            CS.weighting_Factor .= (CS.u_c_vec./CS.U_c_Farm)
+            CS.weighting_Factor[CS.Delta_U .< (0.1 .* WindFarm.u_ambient_zprofile)] .= 1 #correction. For u_i < 0.1 of ambient wind speed -> no weighting is considered.
+            #Compute weighted sum
+            CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum((CS.weighting_Factor .* CS.Delta_U), dims=3);
+
+            println("Superpos-iteration: ", i)
+        end       
     else 
         error("Wrong choice of superposition method. Check 'Superpos' input. Possible entries: 'Linear_Rotorbased' and 'Momentum_Conserving'.")   
     end
@@ -110,11 +125,7 @@ end#getTotalPower#
 
 function computeTerminationCriterion!(WindFarm, CS)
 # Compute termination criterion zeta
-    if WindFarm.Superpos == "Linear_Rotorbased"
     CS.zeta = findmax(abs.(CS.u_0_vec.-CS.u_0_vec_old))[1]
-    elseif WindFarm.Superpos == "Momentum_Conserving"
-    CS.zeta = findmax(abs.(CS.U_c_Farm.-CS.U_c_Farm_old))[1]
-    end 
 end#computeTerminationCriterion
 
 
@@ -137,9 +148,11 @@ function comp_ConvectionVelocity(tmp, u_c_vec, Ct, D, sigma, u_0_vec)
 # Compute local convection velocity of each turbine
     # Term within the sqrt. expression
     tmp = (1 .- ((Ct.*D^2)./(8 .* sigma[:,1:1,:].^2)))
-    tmp[tmp.==-Inf] .= 0    #Correction (-Inf appears for those points which should not be computed, since they are dowmstream)
-    tmp[tmp.<0] .= 0        #Correction (negative numbers appear due to incompatibility between Ishihara-Qian & convection velocity derivation for the near wake.)
+    tmp[tmp .== -Inf] .= 0        #Correction (-Inf appears for those points which should not be computed, since they are dowmstream)
+    tmp[tmp .< 0] .= 0            #Correction (negative numbers appear due to incompatibility between Ishihara-Qian & convection velocity derivation for the near wake.)
+    tmp[isnan.(tmp)] .= 0
     u_c_vec .= (0.5 .+ 0.5 .* sqrt.(tmp)) .* u_0_vec
+    u_c_vec[tmp .== 0] .= 0    #Second correction, to prevent bugs when using for superposition
     return u_c_vec
 end#comp_ConvectionVelocity
     
