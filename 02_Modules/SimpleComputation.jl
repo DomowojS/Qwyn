@@ -15,7 +15,7 @@ function Ishihara_WakeModel!(WindFarm, CS)
 
     # Representative wake width (sigma(x))
     CS.sigma .= CS.Computation_Region_ID .* (CS.k .* CS.XCoordinates./WindFarm.D .+ CS.epsilon) .* WindFarm.D; # Compute wake width of all turbines
-    [:,:,vec(CS.Ct_vec .> 0)]
+
     # Compute correction terms & convection velocity if needed
     if WindFarm.Meandering == true 	|| WindFarm.Superpos == "Momentum_Conserving"
 
