@@ -3,7 +3,7 @@ include("02_Modules/Input_Processing.jl")       #Module to process input data
 include("02_Modules/Initialisation_Module.jl")  #Module for array initialisation/ space preallocation
 include("02_Modules/SimpleComputation.jl")      #Module for simple computation.
 include("02_Modules/Postprocessing.jl")
-using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Postprocessing, TickTock, MAT
+using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Postprocessing, TickTock, MAT,Plots
 
 function Qwyn_Simple()
 #=  This Script excexutes Qwyn. 
@@ -22,7 +22,7 @@ function Qwyn_Simple()
         #Initialise all arrays & matrices needed for the computation.
         println("Initialising arrays..")
         WindFarm, CS = initCompArrays(WindFarm) #Initialises mutable struct "CA" which contains necessary computation arrays & computes coordinates acc. to user Input.
-        
+
         println("..loading turbine data..")
         LoadTurbineDATA!(WindFarm, CS)          #Update Input & computation structs with provided power & thrust curves
         
@@ -37,16 +37,18 @@ function Qwyn_Simple()
         while CS.zeta > 10^-3
             CS.i=CS.i+1
             println("Iteration ", CS.i)
-            
-            Ishihara_WakeModel!(WindFarm, CS)   #Compute single wake effect
 
-            Superposition!(WindFarm, CS)        #Compute mixed wake
+            FindComputationRegion!(WindFarm, CS)
             
-            getTurbineInflow!(WindFarm, CS)     #Evaluate new inflow data
-            
-            getNewThrustandPower!(WindFarm, CS) #Evaluate new operation properties
+            Single_Wake_Computation!(WindFarm, CS)  #Compute single wake effect
 
-            computeTerminationCriterion!(WindFarm, CS) #Compute termination criterion
+            Superposition!(WindFarm, CS)            #Compute mixed wake
+            
+            getTurbineInflow!(WindFarm, CS)         #Evaluate new inflow data
+            
+            getNewThrustandPower!(WindFarm, CS)     #Evaluate new operation properties
+
+            computeTerminationCriterion!(CS)    #Compute termination criterion
         end
             
         getTotalPower!(CS)  #Compute total power of the wind farm 
@@ -57,9 +59,11 @@ function Qwyn_Simple()
         SimplePlots(WindFarm, CS)
         println("...finished!")
 
-    #global CS
-    #TMP=reshape(CS.P_vec[[4, 13, 22, 31, 40]], 5)
-    #Base.print_matrix(stdout, TMP)
+    global CS
+    #TMP=reshape(CS.P_vec[[4, 12, 20, 28, 36, 44, 52, 60]]./CS.P_vec[4], 8) #270
+    #TMP=reshape(CS.P_vec[[5, 12, 19, 26, 33]]./CS.P_vec[4], 5)             #222
+    TMP=reshape(CS.P_vec[[4, 13, 22, 31, 40]]./CS.P_vec[4], 5)             #312
+    Base.print_matrix(stdout, TMP./TMP[1])
     end
 
     return WF, CS;

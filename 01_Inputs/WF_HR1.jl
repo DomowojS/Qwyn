@@ -20,7 +20,7 @@ userdata = OrderedDict{String, Any}(
     # (3.1) Single computatiosn 
     #       This sec14tion is only used for single case computation    
     "u_ambient" => 8,      # [m/s] Ambient wind speed
-    "alpha"     => 270,     # [°] Geographical direction of the wind. -> N == 0°
+    "alpha"     => 222,     # [°] Geographical direction of the wind. -> N == 0°
     "TI_a"      => 0.077,    # [-] Ambient turbulence intensity in [-]
     "z_Surf"    => 0.005,   # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
     "z_r"       => 70.0,    # [m] Height the average wind speed "u_ambient" was measured. If not known, choose z_r = 10
@@ -43,13 +43,16 @@ userdata = OrderedDict{String, Any}(
     ##########      (5) Numerical parameters   ######################
     "Dimensions"            => "3D",        #Choose dimensions resolution. 1) Three dimensional space or 2) two dimansional plane at Hub height.
                                             #Possible inputs: "3D", "2D"
-    "Rotor_Discretization"  => "fibonacci",   #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
+    "Rotor_Discretization"  => "fibonacci", #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
                                             #Possible inputs: "gridded", "fibonacci" !!! Gridded has to be checked and corrected/ Thrown out
-    "Rotor_Res"             => 5,          #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
+    "Rotor_Res"             => 10,           #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
+    
+        # For Momentum conserving superposition only:
+        "Uc_Res"                => 1000,      #Number of points to comppute wake for convection velocity (at each relevant streamwise position x). Has to be > 4
 
     ##########      (6) Graphical output       ######################
     # Simple plots, no further computation:
-    "Plot_power"        => true,    #Plots power output of several turbines
+    "Plot_power"        => false,    #Plots power output of several turbines
     "Plot_windspeed"    => false,   #Plots average inflow windspeed of several turbines
     "Plot_turbulence"   => false,   #Plots average inflow turbulence of several turbines
     "Turbine_Identification"    => [4, 12, 20, 28, 36, 44, 52, 60, 68, 76], #Identify, which turbines should be included in the plot

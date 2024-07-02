@@ -1,52 +1,110 @@
 # Module to initialise matrices and compute all necessary coordinates
 
 module Initialisation_Module
-using JLD2, Interpolations, LinearAlgebra, Random, StatsBase
+using JLD2, Interpolations, LinearAlgebra, Random, StatsBase, Statistics, Plots
 
-export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!
+export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!, generate_grid_for_Uc
 
 function initCompArrays(WindFarm)
 # Initialises/ preallocates all arrays needed for computation
+    ### XYZ initialisation    
+        # Adjust user input for computation
+        alpha_Comp  =   deg2rad(270 - WindFarm.alpha) #User Input logic: Geographical. Computation logic: Flow from left to right (270°(Western wind)==0°)
+        Yaw_Comp    =   deg2rad.(270 .- WindFarm.Yaw)
 
-    # Adjust user input for computation
-    alpha_Comp  =   deg2rad(270 - WindFarm.alpha) #User Input logic: Geographical. Computation logic: Flow from left to right (270°(Western wind)==0°)
-    Yaw_Comp    =   deg2rad.(270 .- WindFarm.Yaw)
-
-    # Transform turbine positions according to inflow direction (Computation logic: windflow always left to right)
-    TMPX = WindFarm.x_vec
-    WindFarm.x_vec =  TMPX .* cos(alpha_Comp) .+ WindFarm.y_vec .* sin(alpha_Comp);
-    WindFarm.y_vec = -TMPX .* sin(alpha_Comp) .+ WindFarm.y_vec .* cos(alpha_Comp);
-    
-    # Generates grid to represent the rotor plane
-    if WindFarm.Rotor_Discretization == "gridded"
-        #Generates an evenly distributed grid. Accurate representation for high number of points but very slow.
-        Y_vec, Z_vec = generate_rotor_grid(WindFarm.Rotor_Res)
-    elseif WindFarm.Rotor_Discretization == "fibonacci"
-        #Generates a fibonacci-lattice distributed grid. Accurate representation for significantly lower amount of points.
-        Y_vec, Z_vec = generate_fibonacci(WindFarm.Rotor_Res)
-    else
-        error("ERROR: Wrong choice of rotor discretization function for", WindFarm.Name,". Check variable Rotor_Discretization. Currently allowed entries: gridded, fibonacci.")
-    end
-
-    # Find and stor actual amount of points per rotor (after grid generation)
-    Real_Rotor_Res = length(Y_vec);
-
-    ### Compute coordinates (in D) for wake computation ###
-    # Dimenisons: Relative X Coordinate, Relative Y Coordinate, Z Coordinate, Absolute turbine number
-    XCoordinate = zeros(Float64, WindFarm.N , 1, WindFarm.N);  #Array for X coordinates of all points
-    YCoordinate = zeros(Float64, WindFarm.N , Real_Rotor_Res, WindFarm.N);  #Array for Y Coordinates of all points
-    ZCoordinate = zeros(Float64, 1 , Real_Rotor_Res, 1);  #Vector containing all height coordinates
-
-    for i in 1:WindFarm.N
-    # Create coordinate array of the structure: 1.Dim: Relative turbine, 2.Dim: RotorPoints, 3.Dim: Absolute turbine
-        XCoordinate[:, :, i] .= XCoordinate[:, :, i] .+ WindFarm.x_vec .- WindFarm.x_vec[i];
-        for j in 1:WindFarm.N
-            YCoordinate[j, :, i] .= Y_vec .+ WindFarm.y_vec[j];
+        # Transform turbine positions according to inflow direction (Computation logic: windflow always left to right)
+        TMPX = WindFarm.x_vec
+        WindFarm.x_vec =  TMPX .* cos(alpha_Comp) .+ WindFarm.y_vec .* sin(alpha_Comp);
+        WindFarm.y_vec = -TMPX .* sin(alpha_Comp) .+ WindFarm.y_vec .* cos(alpha_Comp);
+        
+        # Generates grid to represent the rotor plane
+        if WindFarm.Rotor_Discretization == "gridded"
+            #Generates an evenly distributed grid. Accurate representation for high number of points but very slow.
+            Y_vec, Z_vec = generate_rotor_grid(WindFarm.Rotor_Res)
+        elseif WindFarm.Rotor_Discretization == "fibonacci"
+            #Generates a fibonacci-lattice distributed grid. Accurate representation for significantly lower amount of points.
+            Y_vec, Z_vec = generate_fibonacci(WindFarm.Rotor_Res)
+        else
+            error("ERROR: Wrong choice of rotor discretization function for", WindFarm.Name,". Check variable Rotor_Discretization. Currently allowed entries: gridded, fibonacci.")
         end
-        YCoordinate[:,:,i] .= YCoordinate[:,:,i] .- WindFarm.y_vec[i]
-    end
-    ZCoordinate[1,:,1] .= Z_vec
 
+        # Find and stor actual amount of points per rotor (after grid generation)
+        Real_Rotor_Res = length(Y_vec);
+
+        ### Compute coordinates (in D) for wake computation ###
+        # Dimenisons: Relative X Coordinate, Relative Y Coordinate, Z Coordinate, Absolute turbine number
+        XCoordinate = zeros(Float64, WindFarm.N , 1, WindFarm.N);  #Array for X coordinates of all points
+        YCoordinate = zeros(Float64, WindFarm.N , Real_Rotor_Res, WindFarm.N);  #Array for Y Coordinates of all points
+        ZCoordinate = zeros(Float64, 1 , Real_Rotor_Res, 1);  #Vector containing all height coordinates
+
+        for i in 1:WindFarm.N
+        # Create coordinate array of the structure: 1.Dim: Relative turbine, 2.Dim: RotorPoints, 3.Dim: Absolute turbine
+            XCoordinate[:, :, i] .= XCoordinate[:, :, i] .+ WindFarm.x_vec .- WindFarm.x_vec[i];
+            for j in 1:WindFarm.N
+                YCoordinate[j, :, i] .= Y_vec .+ WindFarm.y_vec[j];
+            end
+            YCoordinate[:,:,i] .= YCoordinate[:,:,i] .- WindFarm.y_vec[i]
+        end
+        ZCoordinate[1,:,1] .= Z_vec
+
+    ### Generate grid for convection velocity computation (needed for momentum conserving superposition)
+        if WindFarm.Superpos == "Momentum_Conserving"
+        # generate basic grid vector 
+
+        if WindFarm.Uc_Res < 4; WindFarm.Uc_Res=4, println("Uc_Res corrected to minimal value 4") end #correction if resolution is chosen too small
+
+        Y_Uc, Z_Uc, WindFarm.Uc_Res = generate_grid_for_Uc(minimum(WindFarm.y_vec)-1, maximum(WindFarm.y_vec)+1, 0.1, 2.0, WindFarm.Uc_Res) #Height normalised -> to be scaled after turbine diameter and hub height read in in "LoadTurbineData"
+        
+        #Preassign arrays for coordinates (the x coordinates can be reused from the rotor points array)
+        Y_for_Uc            =   zeros(Float64, WindFarm.N , WindFarm.Uc_Res, WindFarm.N);
+        Z_for_Uc            =   zeros(Float64, 1 , WindFarm.Uc_Res, 1);
+        r_for_Uc            =   zeros(WindFarm.N, WindFarm.Uc_Res, WindFarm.N);
+        #Preassign arrays for result
+        
+        
+        #Create coordinate arrays
+        for ii in 1:WindFarm.N
+            # Create coordinate array of the structure: 1.Dim: Relative turbine, 2.Dim: RotorPoints, 3.Dim: Absolute turbine
+                for jj in 1:WindFarm.N
+                    Y_for_Uc[jj, :, ii] .= Y_Uc .+ WindFarm.y_vec[jj];
+                end
+                Y_for_Uc[:,:,ii] .= Y_for_Uc[:,:,ii] .- WindFarm.y_vec[ii]
+            end
+            Z_for_Uc[1,:,1] .= Z_Uc
+        
+        #Preassignment of additional arrays needed for computation
+        u_ambient_for_Uc            = zeros(1, WindFarm.Uc_Res, 1)
+        Delta_U_for_Uc              = zeros(WindFarm.N, WindFarm.Uc_Res, WindFarm.N)
+        Mixed_wake_for_Uc           = zeros(WindFarm.N, WindFarm.Uc_Res, 1)
+        Comutation_Region_ID_for_Uc = trues(WindFarm.N, WindFarm.Uc_Res,WindFarm.N)
+        sigma_for_Uc                = zeros(WindFarm.N, WindFarm.Uc_Res, WindFarm.N)
+        sigma_m_for_Uc              = zeros(WindFarm.N, WindFarm.Uc_Res, WindFarm.N)
+        Lambda_for_Uc               = zeros(1, WindFarm.Uc_Res, WindFarm.N)
+        k1_for_Uc                   = zeros(WindFarm.N, WindFarm.Uc_Res, WindFarm.N)  
+        k2_for_Uc                   = zeros(WindFarm.N, WindFarm.Uc_Res, WindFarm.N)  
+        delta_for_Uc                = zeros(1, WindFarm.Uc_Res, 1)  
+        Delta_TI_for_Uc             = zeros(WindFarm.N, WindFarm.Uc_Res, WindFarm.N)
+        weighting_Factor_for_Uc     = zeros(WindFarm.N, WindFarm.Uc_Res, WindFarm.N)
+        
+        else
+
+        #Dummies for struct definition in case other superposition is used 
+        Y_for_Uc                    =   zeros(1,1,1)
+        Z_for_Uc                    =   zeros(1,1,1) 
+        r_for_Uc                    =   zeros(1,1,1)
+        u_ambient_for_Uc            =   zeros(1,1,1)
+        Delta_U_for_Uc              =   zeros(1,1,1)
+        Mixed_wake_for_Uc           =   zeros(1,1,1)
+        Comutation_Region_ID_for_Uc =   trues(1,1,1)
+        sigma_for_Uc                =   zeros(1,1,1)
+        sigma_m_for_Uc              =   zeros(1,1,1)
+        Lambda_for_Uc               =   zeros(1,1,1)
+        k1_for_Uc                   =   zeros(1,1,1)
+        k2_for_Uc                   =   zeros(1,1,1)
+        delta_for_Uc                =   zeros(1,1,1)
+        Delta_TI_for_Uc             =   zeros(1,1,1)
+        weighting_Factor_for_Uc     =   zeros(1,1,1)
+        end    
     #= Transform with respect to yaw angle
     TBDone!!
     =#
@@ -55,11 +113,13 @@ function initCompArrays(WindFarm)
     # Create struct which holds all computation arrays
     CS=ComputationStruct(XCoordinate, YCoordinate, ZCoordinate, zeros(WindFarm.N , Real_Rotor_Res, WindFarm.N), Real_Rotor_Res,  alpha_Comp, Yaw_Comp,
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 0, 0, 0, (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), zeros(1,1,WindFarm.N), (zeros(1,1,WindFarm.N) .+ WindFarm.TI_a),
-                            zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
-                            zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
-                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(1,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N),
-                            similar(XCoordinate, Bool), zeros(WindFarm.N,1,WindFarm.N), zeros(WindFarm.N,1,1), zeros(WindFarm.N,1,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
-                            zeros(WindFarm.N,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,1), 100, 0, zeros(WindFarm.N,1,WindFarm.N)
+                            zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
+                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
+                            zeros(1,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), trues(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,1,WindFarm.N), zeros(WindFarm.N,1,1), 
+                            zeros(WindFarm.N,1,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), Delta_U_for_Uc, Mixed_wake_for_Uc, Y_for_Uc, Z_for_Uc, r_for_Uc, u_ambient_for_Uc, Comutation_Region_ID_for_Uc, 
+                            sigma_for_Uc, sigma_m_for_Uc, Lambda_for_Uc, k1_for_Uc, k2_for_Uc, delta_for_Uc, Delta_TI_for_Uc, weighting_Factor_for_Uc, zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), 
+                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,1), 100, zeros(1,1,WindFarm.N) .+ 100, trues(WindFarm.N), 
+                            trues(WindFarm.N), 0, zeros(WindFarm.N,1,WindFarm.N)
                         )
  
     return WindFarm, CS
@@ -115,21 +175,29 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
     CS.Ct_vec   .=  CS.Interp_Ct(WindFarm.u_ambient);  #Ct of each turbine
     CS.P_vec    .=  CS.Interp_P(WindFarm.u_ambient);   #P of each turbine 
 
-    # If onluy two dimensional computation is conducted -> assign Z-Level to Hubheight
-    # This bit needs some revision with respect to including different turbine (diameters) into the computation.
-    if WindFarm.Dimensions == "2D"
-        CS.XCoordinates .= CS.XCoordinates .* WindFarm.D
-        CS.YCoordinates .= CS.YCoordinates .* WindFarm.D
-        CS.ZCoordinates[1,:,1] .= WindFarm.H;
-        CS.r        .= CS.YCoordinates  # Compute vector in radial & height direction for computation
-    elseif WindFarm.Dimensions == "3D"
-        CS.XCoordinates .= CS.XCoordinates .* WindFarm.D
-        CS.YCoordinates .= CS.YCoordinates .* WindFarm.D
-        CS.ZCoordinates[1,:,1] .= CS.ZCoordinates[1,:,1] .* WindFarm.D .+ WindFarm.H;
-        CS.r            .= sqrt.(CS.YCoordinates.^2 .+ (CS.ZCoordinates.-WindFarm.H).^2) # Compute vector in radial & height direction for computation
-    else
-        error("EROOR: Wrong choice of dimensions in", WindFarm.Name,". Check Dimensions Input in the Input file.")
-    end
+        ### Correction of XYZ to rotor diameter D and Hub height
+        # If onluy two dimensional computation is conducted -> assign Z-Level to Hubheight (!!! To be thrown out !!!)
+        # This bit needs some revision with respect to including different turbine (diameters) into the computation.
+        if WindFarm.Dimensions == "2D"
+            CS.XCoordinates .= CS.XCoordinates .* WindFarm.D
+            CS.YCoordinates .= CS.YCoordinates .* WindFarm.D
+            CS.ZCoordinates[1,:,1] .= WindFarm.H;
+            CS.r        .= CS.YCoordinates  # Compute vector in radial & height direction for computation
+        elseif WindFarm.Dimensions == "3D"
+            # Rotor points
+            CS.XCoordinates         .= CS.XCoordinates .* WindFarm.D
+            CS.YCoordinates         .= CS.YCoordinates .* WindFarm.D
+            CS.ZCoordinates         .= CS.ZCoordinates .* WindFarm.D .+ WindFarm.H;
+            CS.r                    .= sqrt.(CS.YCoordinates.^2 .+ (CS.ZCoordinates.-WindFarm.H).^2) # Compute vector in radial & height direction for computation
+            # Points for convection velocity
+            if WindFarm.Superpos == "Momentum_Conserving"
+                CS.Y_for_Uc         .= CS.Y_for_Uc .* WindFarm.D
+                CS.Z_for_Uc         .= CS.Z_for_Uc .* WindFarm.D;
+                CS.r_for_Uc         .= sqrt.(CS.Y_for_Uc.^2 .+ (CS.Z_for_Uc .- WindFarm.H).^2) # Compute vector in radial & height direction for computation
+            end
+        else
+            error("EROOR: Wrong choice of dimensions in", WindFarm.Name,". Check Dimensions Input in the Input file.")
+        end
 
 end #LoadTurbineDATA
 
@@ -139,10 +207,19 @@ function LoadAtmosphericData!(WindFarm, CS)
   1) Simple Computation: Wind & TI shear profile according to the height coordinates/ rotor resolution chosen by the user.
   2) AEP Computation: TBD
 =#
- WindFarm.u_ambient_zprofile = zeros(1,CS.Real_Rotor_Res,1)#Assign right size to vector
+ WindFarm.u_ambient_zprofile  = zeros(1,CS.Real_Rotor_Res,1)#Assign right size to vector
  # Compute the ambient velocity log profile only for positive Z_Levels
  WindFarm.u_ambient_zprofile .= (CS.ZCoordinates .> 0) .* (WindFarm.u_ambient .* log.(CS.ZCoordinates ./ WindFarm.z_Surf) ./ log.(WindFarm.z_r / WindFarm.z_Surf))
- 
+ CS.u_0_vec .= mean(WindFarm.u_ambient_zprofile)
+
+ # Compute the ambient velocity also for points needed for Uc
+ if WindFarm.Superpos == "Momentum_Conserving"
+ CS.u_ambient_for_Uc         .= (CS.Z_for_Uc .> 0) .* (WindFarm.u_ambient .* log.(CS.Z_for_Uc ./ WindFarm.z_Surf) ./ log.(WindFarm.z_r / WindFarm.z_Surf))
+ end
+
+# Correct inflow velocity
+
+
  # Compute TI profile
     #TBDone!
 end #LoadAtmosphericData
@@ -233,6 +310,26 @@ return Y, Z
 end #generate_fibonacci
 
 
+function generate_grid_for_Uc(min_y::Float64, max_y::Float64, min_z::Float64, max_z::Float64, num_points::Int)
+#Grid points for Uc
+    if num_points < 4
+        error("Number of points must be at least 4 to ensure points at each corner of the rectangle.")
+    end
+
+    # Calculate the number of points along each axis to form a grid
+    num_points_side = ceil(Int, sqrt(num_points))
+
+    # Generate evenly spaced points for Y and Z coordinates, including the maximum values
+    y_coords = range(min_y, stop=max_y, length=num_points_side)
+    z_coords = range(min_z, stop=max_z, length=num_points_side)
+
+    # Create meshgrid
+    Y = repeat(y_coords, inner=num_points_side)
+    Z = repeat(z_coords, outer=num_points_side)
+
+    return Y, Z, length(Y)
+end
+
 mutable struct ComputationStruct
     #Definition of struct (preassignment of arrays & space)
     #Coordinates/ Arrays
@@ -269,23 +366,41 @@ mutable struct ComputationStruct
     k2::Array{Float64,3};       #Parameter for turbulence computation
     delta::Array{Float64,3};    #Parameter for turbulence computation
     Delta_TI::Array{Float64,3}; #Rotor-added turbulence
-    Computation_Region_ID::Array{Bool,3}; #ID for limiting computation of the wake region
+    Computation_Region_ID::BitArray{3}; #ID for limiting computation of the wake region
     #Arrays for Superposition & Meandering
-    u_c_vec::Array{Float64,3};  #Logacl convection velocity (for each turbine)
-    U_c_Farm::Array{Float64,3}; #Global convection velocity (on farm scale)
-    U_c_Farm_old::Array{Float64,3}; #Old global convection velocity from last iteration
+    u_c_vec::Array{Float64,3};          #local convection velocity (for each turbine)
+    U_c_Farm::Array{Float64,3};         #Global convection velocity (on farm scale)
+    U_c_Farm_old::Array{Float64,3};     #Old global convection velocity from last iteration
     weighting_Factor::Array{Float64,3}; #weighting factor (stores uc_i/U_c_Farm with corrections/ filters)
+    #Arrays for computation of U_c_Farm
+    Delta_U_for_Uc::Array{Float64,3};        #Velocity deficit needed for computation of global convection velocity 
+    Mixed_wake_for_Uc::Array{Float64,3};    #Mixed wake (farm level) for computation of global convection velocity
+    Y_for_Uc::Array{Float64,3};
+    Z_for_Uc::Array{Float64,3};
+    r_for_Uc::Array{Float64,3};
+    u_ambient_for_Uc::Array{Float64,3};
+    Computation_Region_ID_for_Uc::BitArray{3};#ID for limiting computation of the wake region
+    sigma_for_Uc::Array{Float64,3};
+    sigma_m_for_Uc::Array{Float64,3};
+    Lambda_for_Uc::Array{Float64,3};
+    k1_for_Uc::Array{Float64,3};
+    k2_for_Uc::Array{Float64,3};
+    delta_for_Uc::Array{Float64,3};
+    Delta_TI_for_Uc::Array{Float64,3};
+    weighting_Factor_for_Uc::Array{Float64,3};
     #Arrays exclusively for Meandering
     psi::Array{Float64,3};      #fluctuation intensitys
     Lambda::Array{Float64,3};   #Integral length scale of representative eddy
     sigma_m::Array{Float64,3};  #wake width correction parameter
     #Arrays needed to superimpose
     U_Farm::Array{Float64,3};       #Final superimposed result for Velocity
-    U_Farm_old::Array{Float64,3};
     TI_Farm::Array{Float64,3};      #Final superimposed result for turbulence intensity
     #Computation Parameters
-    zeta::Float64; # termination criterion
-    i::Int;        # iteration counter
+    zeta::Float64;              # termination criterion (global)
+    zetaID::Array{Float64,3};   # termination criterion for each turbine (for computation region)
+    ID_OutOperConst::BitVector; #Identification of turbines which are out of operation
+    ID_Turbines::BitVector;     #Identification of turbines which should not be computed in following iteration (already converged)
+    i::Int;                     # iteration counter
     #Temporary computation help
     tmp::Array{Float64,3};
 end #mutable struct "ComputationStruct"
