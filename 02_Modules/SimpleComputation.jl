@@ -8,10 +8,10 @@ export FindComputationRegion!, Single_Wake_Computation!, Superposition!, getTurb
 
 function FindComputationRegion!(WindFarm, CS)
 # Find computation region (to prevent unneccasary computation)
-    CS.Computation_Region_ID        = (CS.XCoordinates .> 0.1e-10) .& (abs.(CS.YCoordinates) .< 20 .* WindFarm.D)  # Limit computation domain to reasonable scope
-    CS.Computation_Region_ID_for_Uc  = (CS.XCoordinates .> 0.1e-10) .& (abs.(CS.Y_for_Uc) .< 20 .* WindFarm.D)
-    CS.ID_Turbines              = vec((CS.Ct_vec .> 0) .& (CS.zetaID .!= 0))  #Identify turbines which should not be included in computation
-    CS.ID_OutOperConst          = vec(CS.Ct_vec .== 0)                     #Identify only turbines which are outside of operation constraints (below cut in/ above cut out windspeed)    
+    CS.ID_Turbines              .= (CS.Ct_vec .> 0) .& (CS.zetaID .!= 0)    #Identify turbines which should not be included in computation
+    CS.ID_OutOperConst          .= CS.Ct_vec .== 0                          #Identify only turbines which are outside of operation constraints (below cut in/ above cut out windspeed)    
+        CS.Computation_Region_ID         = (CS.XCoordinates .> 0.1e-10) .& (abs.(CS.YCoordinates) .< 20 .* WindFarm.D) .& (CS.ID_Turbines .== true)  # Limit computation domain to reasonable scope
+        CS.Computation_Region_ID_for_Uc  = (CS.XCoordinates .> 0.1e-10) .& (abs.(CS.YCoordinates) .< 20 .* WindFarm.D) .& (CS.ID_Turbines .== true)
 end
 
 function Single_Wake_Computation!(WindFarm, CS)
@@ -164,7 +164,7 @@ function ComputeEmpiricalVars(Ct::Array{Float64}, TI_0_vec::Array{Float64}, k::A
     b[:,:,ID_Turbines]       .= 0.42 .* Ct[:,:,ID_Turbines].^0.6   .* TI_0_vec[:,:,ID_Turbines].^0.2
     c[:,:,ID_Turbines]       .= 0.15 .* Ct[:,:,ID_Turbines].^-0.25 .* TI_0_vec[:,:,ID_Turbines].^-0.7
     d[:,:,ID_Turbines]       .= 2.3  .* Ct[:,:,ID_Turbines].^1.2   .* TI_0_vec[:,:,ID_Turbines].^0.1
-    e[:,:,ID_Turbines]       .= 1.0                                   .* TI_0_vec[:,:,ID_Turbines].^0.1
+    e[:,:,ID_Turbines]       .= 1.0                                .* TI_0_vec[:,:,ID_Turbines].^0.1
     f[:,:,ID_Turbines]       .= 0.7  .* Ct[:,:,ID_Turbines].^-3.2  .* TI_0_vec[:,:,ID_Turbines].^-0.45
 
     println(sum(ID_Turbines))

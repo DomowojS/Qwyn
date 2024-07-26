@@ -20,9 +20,9 @@ userdata = OrderedDict{String, Any}(
     # (3.1) Single computatiosn 
     #       This sec14tion is only used for single case computation    
     "u_ambient" => 8,      # [m/s] Ambient wind speed
-    "alpha"     => 222,     # [°] Geographical direction of the wind. -> N == 0°
+    "alpha"     => 270,     # [°] Geographical direction of the wind. -> N == 0°
     "TI_a"      => 0.077,    # [-] Ambient turbulence intensity in [-]
-    "z_Surf"    => 0.005,   # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
+    "z_Surf"    => 0.001,   # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
     "z_r"       => 70.0,    # [m] Height the average wind speed "u_ambient" was measured. If not known, choose z_r = 10
 
     # (3.2) AEP computation 
@@ -35,7 +35,7 @@ userdata = OrderedDict{String, Any}(
     
     ## Advanced settings:
     #Superposition Method
-    "Superpos"  => "Momentum_Conserving", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
+    "Superpos"  => "Linear_Rotorbased", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
                                         #Possible inputs: "Linear_Rotorbased", "Momentum_Conserving"
     #Correction Models
     "Meandering"=> false,                #Meandering correction as proposed by Braunbehrens & Segalini (2019).
@@ -52,7 +52,7 @@ userdata = OrderedDict{String, Any}(
 
     ##########      (6) Graphical output       ######################
     # Simple plots, no further computation:
-    "Plot_power"        => false,    #Plots power output of several turbines
+    "Plot_power"        => true,    #Plots power output of several turbines
     "Plot_windspeed"    => false,   #Plots average inflow windspeed of several turbines
     "Plot_turbulence"   => false,   #Plots average inflow turbulence of several turbines
     "Turbine_Identification"    => [4, 12, 20, 28, 36, 44, 52, 60, 68, 76], #Identify, which turbines should be included in the plot
