@@ -3,7 +3,7 @@
 module Initialisation_Module
 using JLD2, Interpolations, LinearAlgebra, Random, StatsBase, Statistics, Plots
 
-export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!, generate_grid_for_Uc
+export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!, FindStreamwiseOrder!
 
 function initCompArrays(WindFarm)
 # Initialises/ preallocates all arrays needed for computation
@@ -118,8 +118,8 @@ function initCompArrays(WindFarm)
                             zeros(1,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), trues(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,1,WindFarm.N), zeros(WindFarm.N,1,1), 
                             zeros(WindFarm.N,1,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), Delta_U_for_Uc, Mixed_wake_for_Uc, Y_for_Uc, Z_for_Uc, r_for_Uc, u_ambient_for_Uc, Comutation_Region_ID_for_Uc, 
                             sigma_for_Uc, sigma_m_for_Uc, Lambda_for_Uc, k1_for_Uc, k2_for_Uc, delta_for_Uc, Delta_TI_for_Uc, weighting_Factor_for_Uc, zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), 
-                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,1), 100, zeros(1,1,WindFarm.N) .+ 100, trues(1,1,WindFarm.N), 
-                            trues(1,1,WindFarm.N), 0, zeros(WindFarm.N,1,WindFarm.N)
+                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,1), 100, zeros(1,1,WindFarm.N) .+ 100, trues(WindFarm.N), 
+                            trues(WindFarm.N), 0, zeros(WindFarm.N,1,WindFarm.N)
                         )
  
     return WindFarm, CS
@@ -221,8 +221,15 @@ function LoadAtmosphericData!(WindFarm, CS)
 
 
  # Compute TI profile
-    #TBDone!
+    #TBDone! -> According to Demetri (Bouris-NTUA) - not neccesarily needed.
 end #LoadAtmosphericData
+
+function FindStreamwiseOrder!(WindFarm, CS)
+#= This function evaluates the wind turbine's coordinates in streamwise direction
+    and assigns a computation order =#
+
+    WindFarm.x_vec;
+end
 
 ### Subfunctions & Structdefinitions #####
 function generate_rotor_grid(totalPoints::Int)
@@ -398,8 +405,8 @@ mutable struct ComputationStruct
     #Computation Parameters
     zeta::Float64;              # termination criterion (global)
     zetaID::Array{Float64,3};   # termination criterion for each turbine (for computation region)
-    ID_OutOperConst::BitArray{3}; #Identification of turbines which are out of operation
-    ID_Turbines::BitArray{3};     #Identification of turbines which should not be computed in following iteration (already converged)
+    ID_OutOperConst::BitVector; #Identification of turbines which are out of operation
+    ID_Turbines::BitVector;     #Identification of turbines which should not be computed in following iteration (already converged)
     i::Int;                     # iteration counter
     #Temporary computation help
     tmp::Array{Float64,3};

@@ -29,6 +29,9 @@ function Qwyn_Simple()
         println("..loading atmospheric data..")
         LoadAtmosphericData!(WindFarm,CS)       #Update Input & computation structs with atmospheric data (wind shear profile, wind rose etc.)
         
+        println("..finding computation order..")
+        FindStreamwiseOrder!(WindFarm, CS)
+
         tock()
         tick()
 
@@ -62,8 +65,8 @@ function Qwyn_Simple()
     global CS
     #TMP=reshape(CS.P_vec[[4, 12, 20, 28, 36, 44, 52, 60]]./CS.P_vec[4], 8) #270
     #TMP=reshape(CS.P_vec[[5, 12, 19, 26, 33]]./CS.P_vec[4], 5)             #222
-    TMP=reshape(CS.P_vec[[4, 13, 22, 31, 40]]./CS.P_vec[4], 5)             #312
-    Base.print_matrix(stdout, TMP./TMP[1])
+    #TMP=reshape(CS.P_vec[[4, 13, 22, 31, 40]]./CS.P_vec[4], 5)             #312
+    #Base.print_matrix(stdout, TMP./TMP[1])
     end
 
     return WF, CS;
