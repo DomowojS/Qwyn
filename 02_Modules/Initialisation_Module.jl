@@ -119,7 +119,7 @@ function initCompArrays(WindFarm)
                             zeros(WindFarm.N,1,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), Delta_U_for_Uc, Mixed_wake_for_Uc, Y_for_Uc, Z_for_Uc, r_for_Uc, u_ambient_for_Uc, Comutation_Region_ID_for_Uc, 
                             sigma_for_Uc, sigma_m_for_Uc, Lambda_for_Uc, k1_for_Uc, k2_for_Uc, delta_for_Uc, Delta_TI_for_Uc, weighting_Factor_for_Uc, zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), 
                             zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,1), 100, zeros(1,1,WindFarm.N) .+ 100, trues(WindFarm.N), 
-                            trues(WindFarm.N), 0, zeros(WindFarm.N,1,WindFarm.N)
+                            trues(WindFarm.N), 0, zeros(WindFarm.N), zeros(WindFarm.N), zeros(WindFarm.N,1,WindFarm.N)
                         )
  
     return WindFarm, CS
@@ -226,10 +226,29 @@ end #LoadAtmosphericData
 
 function FindStreamwiseOrder!(WindFarm, CS)
 #= This function evaluates the wind turbine's coordinates in streamwise direction
-    and assigns a computation order =#
+and assigns a computation order =#
 
-    WindFarm.x_vec;
-end
+    CS.StreamwiseOrder    =   sortperm(WindFarm.x_vec); # Find streamwise order
+    j=1; #Priority level counter
+    ii=1;#Counter for turbines within level
+    
+    for i = 1:WindFarm.N
+
+        if i > 1 # 2nd to nth turbine 
+            
+            if any(abs(WindFarm.y_vec[CS.StreamwiseOrder[i]]) .< (abs(2 .* WindFarm.x_vec[CS.StreamwiseOrder[i]]) .+ WindFarm.y_vec[CS.StreamwiseOrder[ii:i-1]]) ) == true && 
+                any(abs.(WindFarm.y_vec[CS.StreamwiseOrder[i]] .- WindFarm.y_vec[CS.StreamwiseOrder[ii:i-1]]) .< 2) == true #Check if new turbine is in shadowing region of any previous turbine
+                ii=i;
+                j = j+1; #Raise counter to one - new, lower priority level.
+
+            end
+        
+        end
+
+    CS.CompOrder[CS.StreamwiseOrder[i]]=j; #Assign order by streamwise position
+
+    end#for
+end#FindStreamwiseOrder
 
 ### Subfunctions & Structdefinitions #####
 function generate_rotor_grid(totalPoints::Int)
@@ -405,9 +424,11 @@ mutable struct ComputationStruct
     #Computation Parameters
     zeta::Float64;              # termination criterion (global)
     zetaID::Array{Float64,3};   # termination criterion for each turbine (for computation region)
-    ID_OutOperConst::BitVector; #Identification of turbines which are out of operation
-    ID_Turbines::BitVector;     #Identification of turbines which should not be computed in following iteration (already converged)
+    ID_OutOperConst::BitVector; # Identification of turbines which are out of operation
+    ID_Turbines::BitVector;     # Identification of turbines which should not be computed in following iteration (already converged)
     i::Int;                     # iteration counter
+    StreamwiseOrder::Vector{Int64}; # Vector to identify streamwise order of turbines
+    CompOrder::Vector{Int64};       # Vector to identify computation order/ priority
     #Temporary computation help
     tmp::Array{Float64,3};
 end #mutable struct "ComputationStruct"

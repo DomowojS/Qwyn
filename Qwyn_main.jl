@@ -69,6 +69,7 @@ function Qwyn_Simple()
     #Base.print_matrix(stdout, TMP./TMP[1])
     end
 
+    global WF
     return WF, CS;
 end#Qwyn_Simple
 
