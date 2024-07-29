@@ -112,14 +112,14 @@ function initCompArrays(WindFarm)
 
     # Create struct which holds all computation arrays
     CS=ComputationStruct(XCoordinate, YCoordinate, ZCoordinate, zeros(WindFarm.N , Real_Rotor_Res, WindFarm.N), Real_Rotor_Res,  alpha_Comp, Yaw_Comp,
-                            zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 0, 0, 0, (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), zeros(1,1,WindFarm.N), (zeros(1,1,WindFarm.N) .+ WindFarm.TI_a),
+                            zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 0, 0, 0, (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), (zeros(1,1,WindFarm.N) .+ WindFarm.TI_a),
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
                             zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
                             zeros(1,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), trues(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,1,WindFarm.N), zeros(WindFarm.N,1,1), 
                             zeros(WindFarm.N,1,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), Delta_U_for_Uc, Mixed_wake_for_Uc, Y_for_Uc, Z_for_Uc, r_for_Uc, u_ambient_for_Uc, Comutation_Region_ID_for_Uc, 
                             sigma_for_Uc, sigma_m_for_Uc, Lambda_for_Uc, k1_for_Uc, k2_for_Uc, delta_for_Uc, Delta_TI_for_Uc, weighting_Factor_for_Uc, zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), 
-                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,1), 100, zeros(1,1,WindFarm.N) .+ 100, trues(WindFarm.N), 
-                            trues(WindFarm.N), 0, zeros(WindFarm.N), zeros(WindFarm.N), zeros(WindFarm.N,1,WindFarm.N)
+                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,1), trues(WindFarm.N), 
+                            trues(WindFarm.N), falses(WindFarm.N),0, zeros(WindFarm.N), zeros(WindFarm.N), zeros(WindFarm.N,1,WindFarm.N)
                         )
  
     return WindFarm, CS
@@ -374,7 +374,6 @@ mutable struct ComputationStruct
     Interp_Ct::Any; #Interpolation function of thrustcoefficient
     Interp_P::Any;  #Interpolation function of power
     u_0_vec::Array{Float64,3};      #Inflow velocity of each turbine (Hubheight)
-    u_0_vec_old::Array{Float64,3};  #Old Inflow velocity from last iteration 
     TI_0_vec::Array{Float64,3};  #Inflow turbulence intensity of each turbine (Hubheight)
     # Empirical values needed for Ishihara wake model
     k::Array{Float64,3};
@@ -422,11 +421,10 @@ mutable struct ComputationStruct
     U_Farm::Array{Float64,3};       #Final superimposed result for Velocity
     TI_Farm::Array{Float64,3};      #Final superimposed result for turbulence intensity
     #Computation Parameters
-    zeta::Float64;              # termination criterion (global)
-    zetaID::Array{Float64,3};   # termination criterion for each turbine (for computation region)
-    ID_OutOperConst::BitVector; # Identification of turbines which are out of operation
-    ID_Turbines::BitVector;     # Identification of turbines which should not be computed in following iteration (already converged)
-    i::Int;                     # iteration counter
+    ID_OutOperConst::BitVector;     # Identification of turbines which are out of operation
+    ID_Turbines::BitVector;         # Identification of turbines which should not be computed in following iteration (already converged)
+    ID_Turbines_Computed::BitVector;# Turbines whose wake have already been computed
+    i::Int;                         # iteration counter
     StreamwiseOrder::Vector{Int64}; # Vector to identify streamwise order of turbines
     CompOrder::Vector{Int64};       # Vector to identify computation order/ priority
     #Temporary computation help

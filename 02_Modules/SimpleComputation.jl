@@ -8,10 +8,16 @@ export FindComputationRegion!, Single_Wake_Computation!, Superposition!, getTurb
 
 function FindComputationRegion!(WindFarm, CS)
 # Find computation region (to prevent unneccasary computation)
-    CS.ID_Turbines              = vec((CS.Ct_vec .> 0) .& (CS.zetaID .!= 0))    #Identify turbines which should not be included in computation
+    CS.ID_Turbines              = vec(CS.Ct_vec .> 0) .& (CS.CompOrder .== CS.i)    #Identify turbines which should be included in this iterations computation
     CS.ID_OutOperConst          = vec(CS.Ct_vec .== 0)                          #Identify only turbines which are outside of operation constraints (below cut in/ above cut out windspeed)
-        CS.Computation_Region_ID         = (CS.XCoordinates .> 0.1e-10) .& (abs.(CS.YCoordinates) .< 20 .* WindFarm.D)  # Limit computation domain to reasonable scope
-        CS.Computation_Region_ID_for_Uc  = (CS.XCoordinates .> 0.1e-10) .& (abs.(CS.Y_for_Uc) .< 20 .* WindFarm.D)
+    CS.Computation_Region_ID    = (CS.XCoordinates[:,:,CS.ID_Turbines] .> 0.1e-10) .& (abs.(CS.YCoordinates[:,:,CS.ID_Turbines]) .< 20 .* WindFarm.D)  # Limit computation domain to reasonable scope
+        
+        if WindFarm.Superpos == "Momentum_Conserving"
+        CS.Computation_Region_ID_for_Uc  = (CS.XCoordinates[:,:,CS.ID_Turbines] .> 0.1e-10) .& (abs.(CS.Y_for_Uc[:,:,CS.ID_Turbines]) .< 20 .* WindFarm.D)
+        end
+
+    #Store ID of turbines whos wakes were already computed before or will be computed in this iteration (For superposition indication)
+    CS.ID_Turbines_Computed = CS.ID_Turbines_Computed .| CS.ID_Turbines 
 end
 
 function Single_Wake_Computation!(WindFarm, CS)
@@ -31,7 +37,7 @@ function Superposition!(WindFarm, CS)
     #Velocity deficit
     if WindFarm.Superpos == "Linear_Rotorbased"
         #Compute linear rotorbased sum
-        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum(CS.Delta_U, dims=3);
+        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum(CS.Delta_U[:,:,CS.ID_Turbines_Computed], dims=3);
 
     elseif WindFarm.Superpos == "Momentum_Conserving"
         
@@ -74,12 +80,11 @@ function Superposition!(WindFarm, CS)
 
     #Rotor-added turbulence
     ### IMPLEMENT Height Profile for TI_a -> (WindFarm.TI_a.*WindFarm.u_ambient).^2 needs to be height related and ./WindFarm.u_ambient;, too!
-    CS.TI_Farm .= sqrt.((WindFarm.TI_a.*WindFarm.u_ambient).^2 .+ sum((CS.Delta_TI.*CS.u_0_vec).^2, dims=3))./WindFarm.u_ambient;
+    CS.TI_Farm .= sqrt.((WindFarm.TI_a.*WindFarm.u_ambient).^2 .+ sum((CS.Delta_TI[:,:,CS.ID_Turbines_Computed].*CS.u_0_vec[:,:,CS.ID_Turbines_Computed]).^2, dims=3))./WindFarm.u_ambient;
 end#Superposition
 
 function getTurbineInflow!(WindFarm, CS) 
 # Evaluate new inflow data
-    CS.u_0_vec_old .= CS.u_0_vec #Store old inflow data
     CS.u_0_vec .= reshape(mean(mean(CS.U_Farm, dims=3), dims=2), (1,1,WindFarm.N))    #Compute mean inflow velocity for each turbine
     CS.TI_0_vec .= reshape(mean(mean(CS.TI_Farm, dims=3), dims=2), (1,1,WindFarm.N))  #Compute mean Turbulence intensity for each turbine
 end#getTurbineInflow
@@ -106,13 +111,6 @@ function getTotalPower!(CS)
     CS.TotalPower = sum(CS.P_vec)
 end#getTotalPower#
 
-function computeTerminationCriterion!(CS)
-# Compute termination criterion zeta
-    CS.zetaID   .= abs.(CS.u_0_vec.-CS.u_0_vec_old)
-    CS.zeta     = findmax(CS.zetaID)[1]
-    
-end#computeTerminationCriterion
-
 
 ##### Subfunctions for single wake computation #######
 
@@ -120,7 +118,7 @@ function Ishihara_WakeModel!(WindFarm, CS, Delta_U, Delta_TI, X, Z, R, ID, ID_Tu
 # Compute single wake according to the Ishihara-Qian model (2018)
 
         # Representative wake width (sigma(x))
-        sigma[:,:,ID_Turbines] .= ID[:,:,ID_Turbines] .* (CS.k[:,:,ID_Turbines] .* X[:,:,ID_Turbines]./WindFarm.D .+ CS.epsilon[:,:,ID_Turbines]) .* WindFarm.D; # Compute wake width of all turbines
+        sigma[:,:,ID_Turbines] .= ID .* (CS.k[:,:,ID_Turbines] .* X[:,:,ID_Turbines]./WindFarm.D .+ CS.epsilon[:,:,ID_Turbines]) .* WindFarm.D; # Compute wake width of all turbines
 
         # Compute correction terms & convection velocity if needed
         if WindFarm.Meandering == true || WindFarm.Superpos == "Momentum_Conserving"
@@ -134,19 +132,19 @@ function Ishihara_WakeModel!(WindFarm, CS, Delta_U, Delta_TI, X, Z, R, ID, ID_Tu
             # run meandering correction
             CS.psi, Lambda, sigma_m = Meandering_Correction(sigma_m, CS.psi, Lambda, CS.TI_0_vec, CS.u_0_vec, Z, X, CS.u_c_vec, CS.ID_Turbines, Call_for_Uc)
             # Corrected velocity deficit
-            Delta_U[:,:,ID_Turbines]  .=  ID[:,:,ID_Turbines] .* ((1 ./ (CS.a[:,:,ID_Turbines] .+ CS.b[:,:,ID_Turbines] .* X[:,:,ID_Turbines]./WindFarm.D 
+            Delta_U[:,:,ID_Turbines]  .=  ID .* ((1 ./ (CS.a[:,:,ID_Turbines] .+ CS.b[:,:,ID_Turbines] .* X[:,:,ID_Turbines]./WindFarm.D 
                                             .+ CS.c[:,:,ID_Turbines] .* (1 .+ X[:,:,ID_Turbines]./WindFarm.D).^-2).^2) .* (1 .+ (sigma_m[:,:,ID_Turbines]./sigma[:,:,ID_Turbines]).^2)
                                             .^-0.5 .* exp.(-R[:,:,ID_Turbines].^2 ./(2 .* (sigma[:,:,ID_Turbines].^2 .+ sigma_m[:,:,ID_Turbines].^2))) .* CS.u_0_vec[:,:,ID_Turbines]);# Compute velocity deficit
             else
             # Velocity deficit without correction
-            Delta_U[:,:,ID_Turbines]  .=  ID[:,:,ID_Turbines] .* ((1 ./ (CS.a[:,:,ID_Turbines] .+ CS.b[:,:,ID_Turbines] .* X[:,:,ID_Turbines]./WindFarm.D 
+            Delta_U[:,:,ID_Turbines]  .=  ID .* ((1 ./ (CS.a[:,:,ID_Turbines] .+ CS.b[:,:,ID_Turbines] .* X[:,:,ID_Turbines]./WindFarm.D 
                                             .+ CS.c[:,:,ID_Turbines] .* (1 .+ X[:,:,ID_Turbines]./WindFarm.D).^-2).^2) .* exp.(-R[:,:,ID_Turbines].^2 ./(2 .* sigma[:,:,ID_Turbines].^2)) 
                                             .* CS.u_0_vec[:,:,ID_Turbines]); # Compute velocity deficit
             end
         else
     
             # Velocity deficit without correction / computation of convection velocity
-            Delta_U[:,:,ID_Turbines]  .=  ID[:,:,ID_Turbines] .* ((1 ./ (CS.a[:,:,ID_Turbines] .+ CS.b[:,:,ID_Turbines] .* X[:,:,ID_Turbines]./WindFarm.D 
+            Delta_U[:,:,ID_Turbines]  .=  ID .* ((1 ./ (CS.a[:,:,ID_Turbines] .+ CS.b[:,:,ID_Turbines] .* X[:,:,ID_Turbines]./WindFarm.D 
                                             .+ CS.c[:,:,ID_Turbines] .* (1 .+ X[:,:,ID_Turbines]./WindFarm.D).^-2).^2) .* exp.(-R[:,:,ID_Turbines].^2 ./(2 .* sigma[:,:,ID_Turbines].^2)) 
                                             .* CS.u_0_vec[:,:,ID_Turbines]);# Compute velocity deficit
         end
@@ -158,7 +156,7 @@ function Ishihara_WakeModel!(WindFarm, CS, Delta_U, Delta_TI, X, Z, R, ID, ID_Tu
         k2[:,:,ID_Turbines]       .=   (R[:,:,ID_Turbines]./WindFarm.D .<= 0.5) .* ((cos.(pi./2 .* (R[:,:,ID_Turbines]./WindFarm.D .+ 0.5))).^2);
         delta                     .=   (Z .< WindFarm.H) .* (WindFarm.TI_a .* (sin.(pi .* (WindFarm.H .- (Z))./WindFarm.H)).^2);
     
-         Delta_TI[:,:,ID_Turbines] .=   ID[:,:,ID_Turbines] .* (((1 ./ (CS.d[:,:,ID_Turbines] .+ CS.e[:,:,ID_Turbines] .* X[:,:,ID_Turbines]./WindFarm.D .+ CS.f[:,:,ID_Turbines] .* (1 .+ X[:,:,ID_Turbines]./WindFarm.D).^-2)) .* 
+         Delta_TI[:,:,ID_Turbines] .=   ID .* (((1 ./ (CS.d[:,:,ID_Turbines] .+ CS.e[:,:,ID_Turbines] .* X[:,:,ID_Turbines]./WindFarm.D .+ CS.f[:,:,ID_Turbines] .* (1 .+ X[:,:,ID_Turbines]./WindFarm.D).^-2)) .* 
                                         (k1[:,:,ID_Turbines] .* exp.(-(R[:,:,ID_Turbines] .- 0.5.*WindFarm.D).^2 ./ (2 .* (sigma[:,:,ID_Turbines]).^2)) .+ k2[:,:,ID_Turbines] .* exp.(-(R[:,:,ID_Turbines] .+ 0.5.*WindFarm.D).^2 ./(2 .* 
                                         (sigma[:,:,ID_Turbines]).^2)))) .- delta);# Compute rotor-added turbulence
 end#Ishihara_Wakemodel
@@ -174,8 +172,6 @@ function ComputeEmpiricalVars(Ct::Array{Float64}, TI_0_vec::Array{Float64}, k::A
     d[:,:,ID_Turbines]       .= 2.3  .* Ct[:,:,ID_Turbines].^1.2   .* TI_0_vec[:,:,ID_Turbines].^0.1
     e[:,:,ID_Turbines]       .= 1.0                                .* TI_0_vec[:,:,ID_Turbines].^0.1
     f[:,:,ID_Turbines]       .= 0.7  .* Ct[:,:,ID_Turbines].^-3.2  .* TI_0_vec[:,:,ID_Turbines].^-0.45
-
-    println(sum(ID_Turbines))
 
     return k, epsilon, a, b, c, d, e, f
 end#ComputeEmpiricalVars

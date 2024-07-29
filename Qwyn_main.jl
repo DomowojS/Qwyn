@@ -37,21 +37,22 @@ function Qwyn_Simple()
 
         # Iterating over turbine rows
         println("Starting iterative computation...")
-        while CS.zeta > 10^-3
-            CS.i=CS.i+1
+        for CS.i=1:maximum(CS.CompOrder)
             println("Iteration ", CS.i)
 
             FindComputationRegion!(WindFarm, CS)
             
-            Single_Wake_Computation!(WindFarm, CS)  #Compute single wake effect
+            if any(CS.ID_Turbines != 0) # Check if any turbine's wake has to be computed
 
+            Single_Wake_Computation!(WindFarm, CS)  #Compute single wake effect
+            
             Superposition!(WindFarm, CS)            #Compute mixed wake
             
             getTurbineInflow!(WindFarm, CS)         #Evaluate new inflow data
             
             getNewThrustandPower!(WindFarm, CS)     #Evaluate new operation properties
 
-            computeTerminationCriterion!(CS)    #Compute termination criterion
+            end
         end
             
         getTotalPower!(CS)  #Compute total power of the wind farm 

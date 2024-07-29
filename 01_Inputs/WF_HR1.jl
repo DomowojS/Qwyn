@@ -35,7 +35,7 @@ userdata = OrderedDict{String, Any}(
     
     ## Advanced settings:
     #Superposition Method
-    "Superpos"  => "Linear_Rotorbased", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
+    "Superpos"  => "Momentum_Conserving", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
                                         #Possible inputs: "Linear_Rotorbased", "Momentum_Conserving"
     #Correction Models
     "Meandering"=> false,                #Meandering correction as proposed by Braunbehrens & Segalini (2019).
