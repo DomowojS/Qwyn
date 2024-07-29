@@ -42,13 +42,13 @@ function Superposition!(WindFarm, CS)
     elseif WindFarm.Superpos == "Momentum_Conserving"
         
         #For first iteration U_c_Farm gets initial conditions
-        CS.U_c_Farm = maximum(CS.u_c_vec, dims=3);
+        CS.U_c_Farm = maximum(CS.u_c_vec[:,:,CS.ID_Turbines_Computed], dims=3);
         CS.U_c_Farm[CS.U_c_Farm .== 0] .= 1;         #Correction, to prevent NaN in next computation step.
         #Compute weighting factor
-        CS.weighting_Factor_for_Uc .= (CS.u_c_vec./CS.U_c_Farm)
+        CS.weighting_Factor_for_Uc[:,:,CS.ID_Turbines_Computed] .= (CS.u_c_vec[:,:,CS.ID_Turbines_Computed]./CS.U_c_Farm)
         CS.weighting_Factor_for_Uc[CS.Delta_U_for_Uc .< (0.1 .* CS.u_ambient_for_Uc)] .= 1 #correction. For u_i < 0.1 of ambient wind speed -> no weighting is considered.
         #Compute weighted sum
-        CS.Mixed_wake_for_Uc .= CS.u_ambient_for_Uc .- sum((CS.weighting_Factor_for_Uc .* CS.Delta_U_for_Uc), dims=3);
+        CS.Mixed_wake_for_Uc .= CS.u_ambient_for_Uc .- sum((CS.weighting_Factor_for_Uc[:,:,CS.ID_Turbines_Computed] .* CS.Delta_U_for_Uc[:,:,CS.ID_Turbines_Computed]), dims=3);
         
         #Compute global wake convection velocity
         i=0
@@ -60,18 +60,18 @@ function Superposition!(WindFarm, CS)
             CS.U_c_Farm .= sum((CS.Mixed_wake_for_Uc .* (CS.u_ambient_for_Uc .- CS.Mixed_wake_for_Uc)), dims=2) ./ sum((CS.u_ambient_for_Uc .- CS.Mixed_wake_for_Uc), dims=2);
             #CS.U_c_Farm[isnan.(CS.U_c_Farm)] .= WindFarm.u_ambient 
             #Compute weighting factor
-            CS.weighting_Factor_for_Uc .= (CS.u_c_vec./CS.U_c_Farm)
+            CS.weighting_Factor_for_Uc[:,:,CS.ID_Turbines_Computed] .= (CS.u_c_vec[:,:,CS.ID_Turbines_Computed]./CS.U_c_Farm)
             CS.weighting_Factor_for_Uc[CS.Delta_U_for_Uc .< (0.1 .* CS.u_ambient_for_Uc)] .= 1  #correction. For u_i < 0.1 of ambient wind speed -> no weighting is considered.
             #Compute weighted sum
-            CS.Mixed_wake_for_Uc .= CS.u_ambient_for_Uc .- sum((CS.weighting_Factor_for_Uc .* CS.Delta_U_for_Uc), dims=3);
+            CS.Mixed_wake_for_Uc .= CS.u_ambient_for_Uc .- sum((CS.weighting_Factor_for_Uc[:,:,CS.ID_Turbines_Computed] .* CS.Delta_U_for_Uc[:,:,CS.ID_Turbines_Computed]), dims=3);
 
             println("Superpos-iteration: ", i)
         end
 
         # Now Compute the wake for the rotor points with converged farm convection velocity U_c_Farm
-        CS.weighting_Factor .= (CS.u_c_vec./CS.U_c_Farm)
+        CS.weighting_Factor[:,:,CS.ID_Turbines_Computed] .= (CS.u_c_vec[:,:,CS.ID_Turbines_Computed]./CS.U_c_Farm)
         CS.weighting_Factor[CS.Delta_U .< (0.1 .* WindFarm.u_ambient_zprofile)] .= 1 #correction. For u_i < 0.1 of ambient wind speed -> no weighting is considered.
-        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum((CS.weighting_Factor .* CS.Delta_U), dims=3); 
+        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum((CS.weighting_Factor[:,:,CS.ID_Turbines_Computed] .* CS.Delta_U[:,:,CS.ID_Turbines_Computed]), dims=3); 
               
     else 
         error("Wrong choice of superposition method. Check 'Superpos' input. Possible entries: 'Linear_Rotorbased' and 'Momentum_Conserving'.")   
