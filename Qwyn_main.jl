@@ -5,14 +5,14 @@ include("02_Modules/SimpleComputation.jl")      #Module for simple computation.
 include("02_Modules/Postprocessing.jl")
 using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Postprocessing, TickTock, MAT,Plots
 
-function Qwyn_Simple()
+function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
 #=  This Script excexutes Qwyn. 
     Inputs are taken from 01_Inputs.
     All function blocks can be found in 02_Modules
 =#
     tick()
-    WF=generateWF("WF", "01_Inputs")           #Generate array consisting of all input data for each Input 
-                                               #file in "01_Inptus"
+    WF=generateWF("WF", "01_Inputs", u_ambient, alpha, TI_a) #Generate array consisting of all input data for each Input 
+                                                             #file in "01_Inpts"
     
     # Iterate over defined cases. Compute one by one (according to settings)
     for WindFarm in WF
@@ -66,16 +66,14 @@ function Qwyn_Simple()
         println("Plots on the way...")
         SimplePlots(WindFarm, CS)
         println("...finished!")
-
-    global CS
+    
+    return CS
     #TMP=reshape(CS.P_vec[[4, 12, 20, 28, 36, 44, 52, 60]]./CS.P_vec[4], 8) #270
-    TMP=reshape(CS.P_vec[[5, 12, 19, 26, 33]]./CS.P_vec[4], 5)              #222
-    #TMP=reshape(CS.P_vec[[4, 13, 22, 31, 40]]./CS.P_vec[4], 5)             #312
+    #TMP=reshape(CS.P_vec[[5, 12, 19, 26, 33]]./CS.P_vec[4], 5)              #222
+    TMP=reshape(CS.P_vec[[4, 13, 22, 31, 40]]./CS.P_vec[4], 5)             #312
     Base.print_matrix(stdout, TMP)
     end
-
-    global WF
-    return WF, CS;
+    return WF;
 end#Qwyn_Simple
 
 function Qwyn_AEP()

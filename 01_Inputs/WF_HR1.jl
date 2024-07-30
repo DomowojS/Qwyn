@@ -18,10 +18,7 @@ userdata = OrderedDict{String, Any}(
     ##########      (3) Atmospheric data       ######################
     #Use either 3.1 for single computation OR 3.2 for AEP computation
     # (3.1) Single computatiosn 
-    #       This sec14tion is only used for single case computation    
-    "u_ambient" => 8,      # [m/s] Ambient wind speed
-    "alpha"     => 222,     # [°] Geographical direction of the wind. -> N == 0°
-    "TI_a"      => 0.077,    # [-] Ambient turbulence intensity in [-]
+    #       This section is only used for single case computation    
     "z_Surf"    => 0.001,   # [-] Surface roughness of the modelled case *for offshore conditions z_Surf should equal between 0.0001 (calm see) and 0.01 (high waves)
     "z_r"       => 70.0,    # [m] Height the average wind speed "u_ambient" was measured. If not known, choose z_r = 10
 
@@ -46,7 +43,7 @@ userdata = OrderedDict{String, Any}(
     "Rotor_Res"             => 100,           #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
     
         # For Momentum conserving superposition only:
-        "Uc_Res"                => 10000,      #Number of points to comppute wake for convection velocity (at each relevant streamwise position x). Has to be > 4
+        "Uc_Res"                => 1000,      #Number of points to comppute wake for convection velocity (at each relevant streamwise position x). Has to be > 4
 
     ##########      (6) Graphical output       ######################
     # Simple plots, no further computation:
@@ -58,7 +55,7 @@ userdata = OrderedDict{String, Any}(
     # Advanced plots, advanced computation will commence
     "Plot_wind_field"       => false,   #Plots wind field for one simple case
     "Plot_turbulence_field" => false,   #Plots turbulence field for one simple case
-    "Wind_Direction"        => 270.0,     #Wind direction for plot (has to be a direction included during computation!)
+    "Wind_Direction"        => 270.0,   #Wind direction for plot (has to be a direction included during computation!)
 
 
     "z" => 100,    
@@ -72,11 +69,4 @@ userdata = OrderedDict{String, Any}(
         2) Atmospheric data --> provide .jld2 file providing atmospheric data in folder "05_Atmospheric_Data"
     A documentation on how to provide the data can be found in the corresponding folders.
     =#
-    #Turbine placeholders:
-    "D"         => 0.0,        # Turbine diameter 
-    "H"         => 0.0,        # Hub height in [m]
-    "P_Input"   => zeros(1,1), # Power coefficient - defined as .txt in "03_Turbine_Data"
-    "Ct_Input"  => zeros(1,1), # Thrust coefficient - defined as .txt in "03_Turbine_data"
-    #Atmospheric data placeholders:
-    "u_ambient_zprofile" => zeros(1,1,1), # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
-)
+   )
