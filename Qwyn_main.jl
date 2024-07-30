@@ -5,7 +5,7 @@ include("02_Modules/SimpleComputation.jl")      #Module for simple computation.
 include("02_Modules/Postprocessing.jl")
 using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Postprocessing, TickTock, MAT,Plots
 
-function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
+function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real, Ext_Output::Bool)
 #=  This Script excexutes Qwyn. 
     Inputs are taken from 01_Inputs.
     All function blocks can be found in 02_Modules
@@ -67,13 +67,22 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
         SimplePlots(WindFarm, CS)
         println("...finished!")
     
-    return CS
     #TMP=reshape(CS.P_vec[[4, 12, 20, 28, 36, 44, 52, 60]]./CS.P_vec[4], 8) #270
     #TMP=reshape(CS.P_vec[[5, 12, 19, 26, 33]]./CS.P_vec[4], 5)              #222
-    TMP=reshape(CS.P_vec[[4, 13, 22, 31, 40]]./CS.P_vec[4], 5)             #312
-    Base.print_matrix(stdout, TMP)
+    #TMP=reshape(CS.P_vec[[4, 13, 22, 31, 40]]./CS.P_vec[4], 5)             #312
+    #Base.print_matrix(stdout, TMP)
+        
+        #If extended output is requested 
+        if Ext_Output == true
+            global CS
+        elseif Ext_Output == false
+
+        end
     end
-    return WF;
+    if Ext_Output == true
+    return WF, CS
+    end
+
 end#Qwyn_Simple
 
 function Qwyn_AEP()
@@ -101,6 +110,12 @@ function Qwyn_Optimiser()
 # Optimisation functions will be added here.
 
 end#Qwyn_AEP()
+
+struct ShortResult
+# Short result struct with important Inputs
+    x_vec #Weitermachen!!
+
+end
 
 #...more function to come?
 
