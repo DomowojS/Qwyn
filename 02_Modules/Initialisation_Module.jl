@@ -178,12 +178,6 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
         ### Correction of XYZ to rotor diameter D and Hub height
         # If onluy two dimensional computation is conducted -> assign Z-Level to Hubheight (!!! To be thrown out !!!)
         # This bit needs some revision with respect to including different turbine (diameters) into the computation.
-        if WindFarm.Dimensions == "2D"
-            CS.XCoordinates .= CS.XCoordinates .* WindFarm.D
-            CS.YCoordinates .= CS.YCoordinates .* WindFarm.D
-            CS.ZCoordinates[1,:,1] .= WindFarm.H;
-            CS.r        .= CS.YCoordinates  # Compute vector in radial & height direction for computation
-        elseif WindFarm.Dimensions == "3D"
             # Rotor points
             CS.XCoordinates         .= CS.XCoordinates .* WindFarm.D
             CS.YCoordinates         .= CS.YCoordinates .* WindFarm.D
@@ -195,9 +189,6 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
                 CS.Z_for_Uc         .= CS.Z_for_Uc .* WindFarm.D;
                 CS.r_for_Uc         .= sqrt.(CS.Y_for_Uc.^2 .+ (CS.Z_for_Uc .- WindFarm.H).^2) # Compute vector in radial & height direction for computation
             end
-        else
-            error("EROOR: Wrong choice of dimensions in", WindFarm.Name,". Check Dimensions Input in the Input file.")
-        end
 
 end #LoadTurbineDATA
 
@@ -236,7 +227,8 @@ and assigns a computation order =#
 
         if i > 1 # 2nd to nth turbine 
             
-            if any(abs(WindFarm.y_vec[CS.StreamwiseOrder[i]]) .< (abs(2 .* WindFarm.x_vec[CS.StreamwiseOrder[i]]) .+ WindFarm.y_vec[CS.StreamwiseOrder[ii:i-1]]) ) == true && 
+            if any(WindFarm.y_vec[CS.StreamwiseOrder[i]] .< (2 .* WindFarm.x_vec[CS.StreamwiseOrder[i]] .+ (WindFarm.y_vec[CS.StreamwiseOrder[ii:i-1]].- 2 .* WindFarm.x_vec[CS.StreamwiseOrder[ii:i-1]]))) == true && 
+                any(WindFarm.y_vec[CS.StreamwiseOrder[i]] .> (-2 .* WindFarm.x_vec[CS.StreamwiseOrder[i]] .+ (WindFarm.y_vec[CS.StreamwiseOrder[ii:i-1]].+ 2 .* WindFarm.x_vec[CS.StreamwiseOrder[ii:i-1]]))) == true &&
                 any(abs.(WindFarm.y_vec[CS.StreamwiseOrder[i]] .- WindFarm.y_vec[CS.StreamwiseOrder[ii:i-1]]) .< 2) == true #Check if new turbine is in shadowing region of any previous turbine
                 ii=i;
                 j = j+1; #Raise counter to one - new, lower priority level.

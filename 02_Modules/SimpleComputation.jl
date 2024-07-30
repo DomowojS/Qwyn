@@ -113,7 +113,6 @@ end#getTotalPower#
 
 
 ##### Subfunctions for single wake computation #######
-
 function Ishihara_WakeModel!(WindFarm, CS, Delta_U, Delta_TI, X, Z, R, ID, ID_Turbines, sigma, sigma_m, Lambda, k1, k2, delta, Call_for_Uc)
 # Compute single wake according to the Ishihara-Qian model (2018)
 

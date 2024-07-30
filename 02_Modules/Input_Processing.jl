@@ -78,7 +78,6 @@ mutable struct Windfarm
         Meandering::Bool;    #Meandering correction as proposed by Braunbehrens & Segalini (2019).
 
     ##########      (5) Numerical parameters   ######################
-        Dimensions::String;           #Choose dimensions resolution.
         Rotor_Discretization::String; #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). Possible inputs: "gridded", "fibonacci"
         Rotor_Res::Int;               #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
         # For Momentum conserving superposition only:
