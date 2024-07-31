@@ -936,12 +936,6 @@ version = "0.1.1"
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
-[[TickTock]]
-deps = ["Dates"]
-git-tree-sha1 = "385ff4318d1159050cb129f908804ff95b830de0"
-uuid = "9ff05d80-102d-5586-aa04-3a8bd1a90d20"
-version = "1.3.0"
-
 [[TranscodingStreams]]
 deps = ["Random", "Test"]
 git-tree-sha1 = "a947ea21087caba0a798c5e494d0bb78e3a1a3a0"
