@@ -4,7 +4,7 @@ using LinearAlgebra
 userdata = OrderedDict{String, Any}(
     ##########      (1) Wind farm data         ######################
     # Name of the wind Farm
-    "name" => "HR1",
+    "name" => "HR2",
     # Wind Farm Data
     "N" => 80, #Number of turbines  
     "x_vec" => [0, 0.857000000000000, 1.71400000000000, 2.57000000000000, 3.43000000000000, 4.29000000000000, 5.14000000000000, 6, 7, 7.85700000000000, 8.71400000000000, 9.57000000000000, 10.4300000000000, 11.2900000000000, 12.1400000000000, 13, 14, 14.8570000000000, 15.7140000000000, 16.5700000000000, 17.4300000000000, 18.2900000000000, 19.1400000000000, 20, 21, 21.8570000000000, 22.7140000000000, 23.5700000000000, 24.4300000000000, 25.2900000000000, 26.1400000000000, 27, 28, 28.8570000000000, 29.7140000000000, 30.5700000000000, 31.4300000000000, 32.2900000000000, 33.1400000000000, 34, 35, 35.8570000000000, 36.7140000000000, 37.5700000000000, 38.4300000000000, 39.2900000000000, 40.1400000000000, 41, 42, 42.8570000000000, 43.7140000000000, 44.5700000000000, 45.4300000000000, 46.2900000000000, 47.1400000000000, 48, 49, 49.8570000000000, 50.7140000000000, 51.5700000000000, 52.4300000000000, 53.2900000000000, 54.1400000000000, 55, 56, 56.8570000000000, 57.7140000000000, 58.5700000000000, 59.4300000000000, 60.2900000000000, 61.1400000000000, 62, 63, 63.8570000000000, 64.7140000000000, 65.5700000000000, 66.4300000000000, 67.2900000000000, 68.1400000000000, 69], #[0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63], #LinRange(0,21,80),   #X-Coordinates [0, 7, 14, 21, 28, 35],
@@ -32,7 +32,7 @@ userdata = OrderedDict{String, Any}(
     
     ## (4.1) Advanced Computational setting:
     #Superposition Method
-    "Superpos"  => "Momentum_Conserving", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
+    "Superpos"  => "Linear_Rotorbased", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
                                         #Possible inputs: "Linear_Rotorbased", "Momentum_Conserving"
     #Correction Models
     "Meandering"=> false,                #Meandering correction as proposed by Braunbehrens & Segalini (2019).
@@ -47,7 +47,7 @@ userdata = OrderedDict{String, Any}(
 
     ##########      (6) Result struct request  ######################
     
-    "Extended_Output"   => true,    #"false" returns consice result struct with the most important input and computed turbine performance data.
+    "Extended_Output"   => false,    #"false" returns consice result struct with the most important input and computed turbine performance data.
                                     #"true" returns all input computation struct in cell array "WF" as well as full "Computation_Struct" which includes all computational arrays & results. 
     
     ##########      (7) Graphical output       ######################

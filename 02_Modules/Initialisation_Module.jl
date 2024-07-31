@@ -111,7 +111,7 @@ function initCompArrays(WindFarm)
 
 
     # Create struct which holds all computation arrays
-    CS=ComputationStruct(XCoordinate, YCoordinate, ZCoordinate, zeros(WindFarm.N , Real_Rotor_Res, WindFarm.N), Real_Rotor_Res,  alpha_Comp, Yaw_Comp,
+    CS=ComputationStruct(WindFarm.name, 0.0, XCoordinate, YCoordinate, ZCoordinate, zeros(WindFarm.N , Real_Rotor_Res, WindFarm.N), Real_Rotor_Res,  alpha_Comp, Yaw_Comp,
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 0, 0, 0, (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), (zeros(1,1,WindFarm.N) .+ WindFarm.TI_a),
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
                             zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
@@ -349,7 +349,9 @@ function generate_grid_for_Uc(min_y::Float64, max_y::Float64, min_z::Float64, ma
 end
 
 mutable struct ComputationStruct
-    #Definition of struct (preassignment of arrays & space)
+#Definition of struct (preassignment of arrays & space)
+    name::String;      #Name of the InputFile/ WindFarm used
+    CompTime::Float64; #Total computation time (updated after computation)
     #Coordinates/ Arrays
     XCoordinates::Array{Float64,3};
     YCoordinates::Array{Float64,3};

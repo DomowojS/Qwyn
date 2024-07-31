@@ -16,7 +16,6 @@ export generateWF, ComputationData
         # Find the number of applicable inputfiles
         n=length(script_files);   
         WF=Vector{Windfarm}(undef, n);  # Creating array to contain all input data (of the type of Windfarm - mutable struct)
-
             # Iterate over all input files and store them in struct array
             for i=1:n
                 # User Input
@@ -79,7 +78,7 @@ export generateWF, ComputationData
         ##########      (4) Computational setting  ######################
             SimpleComp::Bool;           # For the computation of one case
             AEPComp::Bool;              # For the estimation of the farms AEP
-        ## Advanced settings:
+        ## (4.1) Advanced computational settings:
         #Superposition Method
             Superpos::String;    # Superposition using linear rotorbased summation for velocity deficit
         #Correction Models
@@ -91,7 +90,12 @@ export generateWF, ComputationData
             # For Momentum conserving superposition only:
             Uc_Res::Int;                  #Number of points to comppute wake for convection velocity
 
-        ##########      (6) Graphical output       ######################
+        ##########      (6) Result struct request  ######################
+    
+            Extended_Output::Bool;    #"false" returns consice result struct with the most important input and computed turbine performance data.
+                                            #"true" returns all input computation struct in cell array "WF" as well as full "Computation_Struct" which includes all computational arrays & results. 
+
+        ##########      (7) Graphical output       ######################
             # Simple plots, no further computation:
             Plot_power::Bool;       #Plots power output of several turbines
             Plot_windspeed::Bool;   #Plots average inflow windspeed of several turbines
@@ -100,7 +104,7 @@ export generateWF, ComputationData
             Normalize_to::Int;                      #Specify which turbines power the plot should be normalised to (If no normalisation is wanted, type: 0)
             # Advanced plots, advanced computation will commence
             Plot_wind_field::Bool;      #Plots wind field for one simple case
-            Plot_turbulence_fiel::Bool; #Plots turbulence field for one simple case
+            Plot_turbulence_field::Bool; #Plots turbulence field for one simple case
             Wind_Direction::Float64;    #Wind direction for plot (has to be a direction included during computation!)
 
             z::Int;    
