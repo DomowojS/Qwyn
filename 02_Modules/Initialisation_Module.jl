@@ -3,7 +3,7 @@
 module Initialisation_Module
 using JLD2, Interpolations, LinearAlgebra, Random, StatsBase, Statistics, Plots
 
-export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!, generate_grid_for_Uc
+export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData!, FindStreamwiseOrder!
 
 function initCompArrays(WindFarm)
 # Initialises/ preallocates all arrays needed for computation
@@ -111,15 +111,15 @@ function initCompArrays(WindFarm)
 
 
     # Create struct which holds all computation arrays
-    CS=ComputationStruct(XCoordinate, YCoordinate, ZCoordinate, zeros(WindFarm.N , Real_Rotor_Res, WindFarm.N), Real_Rotor_Res,  alpha_Comp, Yaw_Comp,
-                            zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 0, 0, 0, (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), zeros(1,1,WindFarm.N), (zeros(1,1,WindFarm.N) .+ WindFarm.TI_a),
+    CS=ComputationStruct(WindFarm.name, 0.0, XCoordinate, YCoordinate, ZCoordinate, zeros(WindFarm.N , Real_Rotor_Res, WindFarm.N), Real_Rotor_Res,  alpha_Comp, Yaw_Comp,
+                            zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 0, 0, 0, (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), (zeros(1,1,WindFarm.N) .+ WindFarm.TI_a),
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
                             zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
                             zeros(1,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), trues(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,1,WindFarm.N), zeros(WindFarm.N,1,1), 
                             zeros(WindFarm.N,1,1), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), Delta_U_for_Uc, Mixed_wake_for_Uc, Y_for_Uc, Z_for_Uc, r_for_Uc, u_ambient_for_Uc, Comutation_Region_ID_for_Uc, 
                             sigma_for_Uc, sigma_m_for_Uc, Lambda_for_Uc, k1_for_Uc, k2_for_Uc, delta_for_Uc, Delta_TI_for_Uc, weighting_Factor_for_Uc, zeros(1,1,WindFarm.N), zeros(1,Real_Rotor_Res,WindFarm.N), 
-                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,1), 100, zeros(1,1,WindFarm.N) .+ 100, trues(WindFarm.N), 
-                            trues(WindFarm.N), 0, zeros(WindFarm.N,1,WindFarm.N)
+                            zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,1), zeros(WindFarm.N,Real_Rotor_Res,1), trues(WindFarm.N), 
+                            trues(WindFarm.N), falses(WindFarm.N),0, zeros(WindFarm.N), zeros(WindFarm.N), zeros(WindFarm.N,1,WindFarm.N)
                         )
  
     return WindFarm, CS
@@ -178,12 +178,6 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
         ### Correction of XYZ to rotor diameter D and Hub height
         # If onluy two dimensional computation is conducted -> assign Z-Level to Hubheight (!!! To be thrown out !!!)
         # This bit needs some revision with respect to including different turbine (diameters) into the computation.
-        if WindFarm.Dimensions == "2D"
-            CS.XCoordinates .= CS.XCoordinates .* WindFarm.D
-            CS.YCoordinates .= CS.YCoordinates .* WindFarm.D
-            CS.ZCoordinates[1,:,1] .= WindFarm.H;
-            CS.r        .= CS.YCoordinates  # Compute vector in radial & height direction for computation
-        elseif WindFarm.Dimensions == "3D"
             # Rotor points
             CS.XCoordinates         .= CS.XCoordinates .* WindFarm.D
             CS.YCoordinates         .= CS.YCoordinates .* WindFarm.D
@@ -195,9 +189,6 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
                 CS.Z_for_Uc         .= CS.Z_for_Uc .* WindFarm.D;
                 CS.r_for_Uc         .= sqrt.(CS.Y_for_Uc.^2 .+ (CS.Z_for_Uc .- WindFarm.H).^2) # Compute vector in radial & height direction for computation
             end
-        else
-            error("EROOR: Wrong choice of dimensions in", WindFarm.Name,". Check Dimensions Input in the Input file.")
-        end
 
 end #LoadTurbineDATA
 
@@ -221,8 +212,35 @@ function LoadAtmosphericData!(WindFarm, CS)
 
 
  # Compute TI profile
-    #TBDone!
+    #TBDone! -> According to Demetri (Bouris-NTUA) - not neccesarily needed.
 end #LoadAtmosphericData
+
+function FindStreamwiseOrder!(WindFarm, CS)
+#= This function evaluates the wind turbine's coordinates in streamwise direction
+and assigns a computation order =#
+
+    CS.StreamwiseOrder    =   sortperm(WindFarm.x_vec); # Find streamwise order
+    j=1; #Priority level counter
+    ii=1;#Counter for turbines within level
+    
+    for i = 1:WindFarm.N
+
+        if i > 1 # 2nd to nth turbine 
+            
+            if any(WindFarm.y_vec[CS.StreamwiseOrder[i]] .< (2 .* WindFarm.x_vec[CS.StreamwiseOrder[i]] .+ (WindFarm.y_vec[CS.StreamwiseOrder[ii:i-1]].- 2 .* WindFarm.x_vec[CS.StreamwiseOrder[ii:i-1]]))) == true && 
+                any(WindFarm.y_vec[CS.StreamwiseOrder[i]] .> (-2 .* WindFarm.x_vec[CS.StreamwiseOrder[i]] .+ (WindFarm.y_vec[CS.StreamwiseOrder[ii:i-1]].+ 2 .* WindFarm.x_vec[CS.StreamwiseOrder[ii:i-1]]))) == true &&
+                any(abs.(WindFarm.y_vec[CS.StreamwiseOrder[i]] .- WindFarm.y_vec[CS.StreamwiseOrder[ii:i-1]]) .< 2) == true #Check if new turbine is in shadowing region of any previous turbine
+                ii=i;
+                j = j+1; #Raise counter to one - new, lower priority level.
+
+            end
+        
+        end
+
+    CS.CompOrder[CS.StreamwiseOrder[i]]=j; #Assign order by streamwise position
+
+    end#for
+end#FindStreamwiseOrder
 
 ### Subfunctions & Structdefinitions #####
 function generate_rotor_grid(totalPoints::Int)
@@ -331,7 +349,9 @@ function generate_grid_for_Uc(min_y::Float64, max_y::Float64, min_z::Float64, ma
 end
 
 mutable struct ComputationStruct
-    #Definition of struct (preassignment of arrays & space)
+#Definition of struct (preassignment of arrays & space)
+    name::String;      #Name of the InputFile/ WindFarm used
+    CompTime::Float64; #Total computation time (updated after computation)
     #Coordinates/ Arrays
     XCoordinates::Array{Float64,3};
     YCoordinates::Array{Float64,3};
@@ -348,7 +368,6 @@ mutable struct ComputationStruct
     Interp_Ct::Any; #Interpolation function of thrustcoefficient
     Interp_P::Any;  #Interpolation function of power
     u_0_vec::Array{Float64,3};      #Inflow velocity of each turbine (Hubheight)
-    u_0_vec_old::Array{Float64,3};  #Old Inflow velocity from last iteration 
     TI_0_vec::Array{Float64,3};  #Inflow turbulence intensity of each turbine (Hubheight)
     # Empirical values needed for Ishihara wake model
     k::Array{Float64,3};
@@ -396,11 +415,12 @@ mutable struct ComputationStruct
     U_Farm::Array{Float64,3};       #Final superimposed result for Velocity
     TI_Farm::Array{Float64,3};      #Final superimposed result for turbulence intensity
     #Computation Parameters
-    zeta::Float64;              # termination criterion (global)
-    zetaID::Array{Float64,3};   # termination criterion for each turbine (for computation region)
-    ID_OutOperConst::BitVector; #Identification of turbines which are out of operation
-    ID_Turbines::BitVector;     #Identification of turbines which should not be computed in following iteration (already converged)
-    i::Int;                     # iteration counter
+    ID_OutOperConst::BitVector;     # Identification of turbines which are out of operation
+    ID_Turbines::BitVector;         # Identification of turbines which should not be computed in following iteration (already converged)
+    ID_Turbines_Computed::BitVector;# Turbines whose wake have already been computed
+    i::Int;                         # iteration counter
+    StreamwiseOrder::Vector{Int64}; # Vector to identify streamwise order of turbines
+    CompOrder::Vector{Int64};       # Vector to identify computation order/ priority
     #Temporary computation help
     tmp::Array{Float64,3};
 end #mutable struct "ComputationStruct"
