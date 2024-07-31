@@ -65,8 +65,9 @@ function Superposition!(WindFarm, CS)
             #Compute weighted sum
             CS.Mixed_wake_for_Uc .= CS.u_ambient_for_Uc .- sum((CS.weighting_Factor_for_Uc[:,:,CS.ID_Turbines_Computed] .* CS.Delta_U_for_Uc[:,:,CS.ID_Turbines_Computed]), dims=3);
 
-            println("Superpos-iteration: ", i)
+            
         end
+        if WindFarm.CompSetting=="Simple" println("Convection velocity converged after $i iterations") end
 
         # Now Compute the wake for the rotor points with converged farm convection velocity U_c_Farm
         CS.weighting_Factor[:,:,CS.ID_Turbines_Computed] .= (CS.u_c_vec[:,:,CS.ID_Turbines_Computed]./CS.U_c_Farm)

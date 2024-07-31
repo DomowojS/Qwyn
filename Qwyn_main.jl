@@ -44,9 +44,9 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
 
 
         # Iterating over turbine rows
-        println("Starting iterative computation...")
+        println("Starting computation...")
         for CS.i=1:maximum(CS.CompOrder)
-            println("Step ", CS.i)
+            if WindFarm.Superpos=="Momentum_Conserving" println("Step ", CS.i) end
 
             FindComputationRegion!(WindFarm, CS)
             
@@ -85,7 +85,8 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
             CS.CompTime=t_end_loop;
             Results[i]=CS;
         elseif WindFarm.Extended_Output == false
-            Results[i]=ShortResult(WindFarm.name, t_end_loop, WindFarm.x_vec, WindFarm.y_vec, vec(WindFarm.u_ambient_zprofile));
+            Results[i]=ShortResult(WindFarm.name, t_end_loop, WindFarm.x_vec, WindFarm.y_vec, vec(WindFarm.u_ambient_zprofile), 
+                        vec(CS.Ct_vec), vec(CS.P_vec), CS.TotalPower, vec(CS.u_0_vec), vec(CS.TI_0_vec), CS.U_Farm, CS.TI_Farm);
         end
     
     end#Loop over Input structs
@@ -131,6 +132,15 @@ struct ShortResult
     x_Coordinates_streamwise::Vector{Float64};
     y_Coordinates_streamwise::Vector{Float64};
     u_heightprofile::Vector{Float64};
+
+    #Results Turbines:
+    Ct_vec::Vector{Float64};
+    P_vec::Vector{Float64};
+    TotalPower::Float64;
+    u_0_av::Vector{Float64};
+    TI_0_av::Vector{Float64};
+    U_0_RotorDistr::Array{Float64, 3}
+    TI_0_RotorDistr::Array{Float64, 3}
 end#ShortResult
 
 

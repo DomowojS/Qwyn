@@ -27,8 +27,9 @@ userdata = OrderedDict{String, Any}(
     "Wind_rose" => 3.14159999, # Get wind rose as specified in "04_Ambient_data"
 
     ##########      (4) Computational setting  ######################
-    "SimpleComp"    => true,    # For the computation of one case 
-    "AEPComp"       => false,   # For the estimation of the farms AEP
+    "CompSetting"    => "Simple",    #= What do you want to compute? 1: "Simple" - comp. of one case
+                                                                     2: "AEP"    - comp of AEP  
+                                                                     3: "Optim"  - WF Optimization =#
     
     ## (4.1) Advanced Computational setting:
     #Superposition Method
@@ -47,7 +48,7 @@ userdata = OrderedDict{String, Any}(
 
     ##########      (6) Result struct request  ######################
     
-    "Extended_Output"   => true,    #"false" returns consice result struct with the most important input and computed turbine performance data.
+    "Extended_Output"   => false,    #"false" returns consice result struct with the most important input and computed turbine performance data.
                                     #"true" returns all input computation struct in cell array "WF" as well as full "Computation_Struct" which includes all computational arrays & results. 
     
     ##########      (7) Graphical output       ######################

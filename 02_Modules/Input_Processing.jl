@@ -76,8 +76,7 @@ export generateWF, ComputationData
             Wind_rose::Float64; # Get wind rose as specified in "04_Ambient_data"
         
         ##########      (4) Computational setting  ######################
-            SimpleComp::Bool;           # For the computation of one case
-            AEPComp::Bool;              # For the estimation of the farms AEP
+            CompSetting::String;           # For the computation of one case
         ## (4.1) Advanced computational settings:
         #Superposition Method
             Superpos::String;    # Superposition using linear rotorbased summation for velocity deficit
