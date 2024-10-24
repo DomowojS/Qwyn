@@ -133,7 +133,7 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
     if WindFarm.Turbine_Type=="VestasV80"
         WindFarm.D = 80;
         WindFarm.H = 70;
-        data = load("04_Turbine_Data\\VestasV80_2MW.jld2")  # Load data from Input 
+        data = load("04_Turbine_Data/VestasV80_2MW.jld2")  # Load data from Input 
         WindFarm.Ct_Input = data["CT_Input"];               # Thrustcoefficient vs. Windspeed
         WindFarm.P_Input  = data["P_Input"];                 # Power vs. Windspeed
         
@@ -151,19 +151,19 @@ The ZCoordinate is also coorrected to have its origin at the Hubheigt of the tur
     elseif WindFarm.Turbine_Type=="NREL_5MW"
         WindFarm.D = 126;
         WindFarm.H = 90;
-        data=load("04_Turbine_Data\\NREL_5MW.jld2")         # Load data from Input 
+        data=load("04_Turbine_Data/NREL_5MW.jld2")         # Load data from Input 
         WindFarm.Ct_Input;                                  # Thrustcoefficient vs. Windspeed
         WindFarm.P_Input;                                   # Power vs. Windspeed
     elseif WindFarm.Turbine_Type=="DTU_10MW"
         WindFarm.D = 119;
         WindFarm.H = 178.3;
-        data=load("04_Turbine_Data\\DTU_10MW.jld2")         # Load data from Input 
+        data=load("04_Turbine_Data/DTU_10MW.jld2")         # Load data from Input 
         WindFarm.Ct_Input;                                  # Thrustcoefficient vs. Windspeed
         WindFarm.P_Input;                                   # Power vs. Windspeed
     elseif WindFarm.Turbine_Type=="IEA_15MW"
         WindFarm.D = 240;
         WindFarm.H = 150;
-        data=load("04_Turbine_Data\\IEA_15MW.jld2")         # Load data from Input 
+        data=load("04_Turbine_Data/IEA_15MW.jld2")         # Load data from Input 
         WindFarm.Ct_Input;                                  # Thrustcoefficient vs. Windspeed
         WindFarm.P_Input;                                   # Power vs. Windspeed
     else

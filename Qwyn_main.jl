@@ -5,6 +5,9 @@ include("02_Modules/SimpleComputation.jl")      #Module for simple computation.
 include("02_Modules/Postprocessing.jl")
 using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Postprocessing, MAT, Plots
 
+
+
+
 function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
 #=  This Script excexutes Qwyn. 
     Inputs are taken from 01_Inputs.
@@ -122,6 +125,13 @@ function Qwyn_Optimiser()
 
 end#Qwyn_Optimiser()
 
+
+
+
+
+
+
+
 ########## Functional elements ############
 
 # Consice result struct
@@ -142,6 +152,35 @@ struct ShortResult
     U_0_RotorDistr::Array{Float64, 3}
     TI_0_RotorDistr::Array{Float64, 3}
 end#ShortResult
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
                                 #= Temporary stuff -> for saving to MAT and plotting in Matlab!    
