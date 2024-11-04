@@ -59,14 +59,11 @@ userdata = OrderedDict{String, Any}(
     "Turbine_Identification"    => [4, 12, 20, 28, 36, 44, 52, 60, 68, 76], #Identify, which turbines should be included in the plot
     "Normalize_to"              => 4,                                      #Specify which turbines power the plot should be normalised to (If no normalisation is wanted, type: 0)
     # Advanced plots, advanced computation will commence
-    "Plot_wind_field"       => false,   #Plots wind field for one simple case
+    "Plot_wind_field"       => true,   #Plots wind field for one simple case
     "Plot_turbulence_field" => false,   #Plots turbulence field for one simple case
     "Wind_Direction"        => 270.0,   #Wind direction for plot (has to be a direction included during computation!)
+    "Resolution"            => 0.3,     #Pick resolution in terms of Diameter  
 
-
-    "z" => 100,    
-    "Z_Max"     => 110,  #Maximum height
-    "Z_Min"     => 30,   #Minimum height
 
     ##########   Literature Input              ######################
     #= These Numbers are placeholders. They overwritten by data from literature.

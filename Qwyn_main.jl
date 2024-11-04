@@ -3,7 +3,7 @@ include("02_Modules/Input_Processing.jl")       #Module to process input data
 include("02_Modules/Initialisation_Module.jl")  #Module for array initialisation/ space preallocation
 include("02_Modules/SimpleComputation.jl")      #Module for simple computation.
 include("02_Modules/Postprocessing.jl")
-using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Postprocessing, MAT, Plots
+using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Postprocessing, MAT
 
 
 
@@ -38,8 +38,8 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
                                                 #thrust curves
         
         println("..loading atmospheric data..")
-        LoadAtmosphericData!(WindFarm,CS)       #Update Input & computation structs with atmospheric data &
-                                                #(wind shear profile, wind rose etc.)
+        WindFarm.u_ambient_zprofile, CS = LoadAtmosphericData(WindFarm,CS)      #Update Input & computation structs with atmospheric data &
+                                                                                #(wind shear profile, wind rose etc.)
         
         println("..finding computation order..")
         FindStreamwiseOrder!(WindFarm, CS)
@@ -57,7 +57,7 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
 
             Single_Wake_Computation!(WindFarm, CS)  #Compute single wake effect
             
-            Superposition!(WindFarm, CS)            #Compute mixed wake
+            Superposition!(WindFarm, CS, WindFarm.u_ambient_zprofile)            #Compute mixed wake
             
             getTurbineInflow!(WindFarm, CS)         #Evaluate new inflow data
             
@@ -74,8 +74,16 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
 
         if any([WindFarm.Plot_power, WindFarm.Plot_windspeed, WindFarm.Plot_turbulence, WindFarm.Plot_wind_field, WindFarm.Plot_turbulence_field]) == true
         println("Plots on the way...")
-        SimplePlots(WindFarm, CS)
-        println("...finished!")
+            if any([WindFarm.Plot_power, WindFarm.Plot_windspeed, WindFarm.Plot_turbulence]) == true
+                SimplePlots(WindFarm, CS)
+            end
+
+            if any([WindFarm.Plot_wind_field, WindFarm.Plot_turbulence_field]) == true
+                GS = Qwyn_Graphic(WindFarm, CS)
+                AdvancedPlots(WindFarm, GS)
+            end
+
+            println("...finished!")
         end
     
      #TMP=reshape(CS.P_vec[[4, 12, 20, 28, 36, 44, 52, 60]]./CS.P_vec[4], 8) #270
@@ -83,7 +91,7 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
      #TMP=reshape(CS.P_vec[[4, 13, 22, 31, 40]]./CS.P_vec[4], 5)             #312
      #Base.print_matrix(stdout, TMP)
         
-        # Safe results
+        # Organize final output
         if WindFarm.Extended_Output == true #If extended output is requested 
             CS.CompTime=t_end_loop;
             Results[i]=CS;
@@ -91,10 +99,9 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
             Results[i]=ShortResult(WindFarm.name, t_end_loop, WindFarm.x_vec, WindFarm.y_vec, vec(WindFarm.u_ambient_zprofile), 
                         vec(CS.Ct_vec), vec(CS.P_vec), CS.TotalPower, vec(CS.u_0_vec), vec(CS.TI_0_vec), CS.U_Farm, CS.TI_Farm);
         end
-    
     end#Loop over Input structs
 
-        println("Total computation time of all $i cases: $(round(time()-t_start, digits = 4))s.")
+        println("Total processing time of $i case(s): $(round(time()-t_start, digits = 4))s.")
         return Results, WF #Returns results & Inputfiles as structs
 
 end#Qwyn_Simple
@@ -123,14 +130,37 @@ end#Qwyn_AEP
 function Qwyn_Optimiser()
 # Optimisation functions will be added here.
 
-end#Qwyn_Optimiser()
+end#Qwyn_Optimiser
 
+function Qwyn_Graphic(WindFarm, CS)
+# Computes full flowfield at resolution as specified in InputFile
+    println("...computing Full Flow Field...")
 
+    GS = initGraphicArrays(WindFarm)        #Initialises mutable struct "GS" which contains necessary 
+                                            #computation arrays for Graphical Output
+    
+    # Correct preassigned values in "GS" according to already computed data in "CS"
+    GS = correctGS(GS, CS, WindFarm)
 
+                                  
+    WindFarm.u_ambient_zprofile_4Graphic, GS = LoadAtmosphericData(WindFarm, GS)       #Update Input & computation structs with atmospheric data &
+                                                                                       #(wind shear profile, wind rose etc.)                                       
+    
+    # Set Comp & Streamwise order to 1. No iteration needed, only one parallel computation for all turbines
+    GS.CompOrder       .= 1
+    GS.StreamwiseOrder .= 1
 
+    if WindFarm.Superpos=="Momentum_Conserving" println("Step ", CS.i) end
 
+        FindComputationRegion!(WindFarm, GS)
 
+        Single_Wake_Computation!(WindFarm, GS)  #Compute single wake effect
+    
+        Superposition!(WindFarm, GS, WindFarm.u_ambient_zprofile_4Graphic)            #Compute mixed wake
 
+    return GS #Returns Graphical Struct
+
+end#Qwyn_Graphic
 
 ########## Functional elements ############
 

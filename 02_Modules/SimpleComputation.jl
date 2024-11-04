@@ -9,7 +9,7 @@ export FindComputationRegion!, Single_Wake_Computation!, Superposition!, getTurb
 function FindComputationRegion!(WindFarm, CS)
 # Find computation region (to prevent unneccasary computation)
     CS.ID_Turbines              = vec(CS.Ct_vec .> 0) .& (CS.CompOrder .== CS.i)    #Identify turbines which should be included in this iterations computation
-    CS.ID_OutOperConst          = vec(CS.Ct_vec .== 0)                          #Identify only turbines which are outside of operation constraints (below cut in/ above cut out windspeed)
+    CS.ID_OutOperConst          = vec(CS.Ct_vec .== 0)                              #Identify only turbines which are outside of operation constraints (below cut in/ above cut out windspeed)
     CS.Computation_Region_ID    = (CS.XCoordinates[:,:,CS.ID_Turbines] .> 0.1e-10) .& (abs.(CS.YCoordinates[:,:,CS.ID_Turbines]) .< 20 .* WindFarm.D)  # Limit computation domain to reasonable scope
         
         if WindFarm.Superpos == "Momentum_Conserving"
@@ -27,17 +27,17 @@ function Single_Wake_Computation!(WindFarm, CS)
     
     Ishihara_WakeModel!(WindFarm, CS, CS.Delta_U, CS.Delta_TI, CS.XCoordinates, CS.ZCoordinates, CS.r, CS.Computation_Region_ID, CS.ID_Turbines, CS.sigma, CS.sigma_m, CS.Lambda, CS.k1, CS.k2, CS.delta, false)   
     if WindFarm.Superpos == "Momentum_Conserving"
-        Ishihara_WakeModel!(WindFarm, CS, CS.Delta_U_for_Uc, CS. Delta_TI_for_Uc, CS.XCoordinates, CS.Z_for_Uc, CS.r_for_Uc, CS.Computation_Region_ID_for_Uc, CS.ID_Turbines, CS.sigma_for_Uc, CS.sigma_m_for_Uc, CS.Lambda_for_Uc, CS.k1_for_Uc, CS.k2_for_Uc, CS.delta_for_Uc, true) 
+        Ishihara_WakeModel!(WindFarm, CS, CS.Delta_U_for_Uc, CS.Delta_TI_for_Uc, CS.XCoordinates, CS.Z_for_Uc, CS.r_for_Uc, CS.Computation_Region_ID_for_Uc, CS.ID_Turbines, CS.sigma_for_Uc, CS.sigma_m_for_Uc, CS.Lambda_for_Uc, CS.k1_for_Uc, CS.k2_for_Uc, CS.delta_for_Uc, true) 
     end
 
 end#Single_Wake_Computation
 
-function Superposition!(WindFarm, CS)
+function Superposition!(WindFarm, CS, u_ambient_zprofile)
 # Compute mixed wake properties
     #Velocity deficit
     if WindFarm.Superpos == "Linear_Rotorbased"
         #Compute linear rotorbased sum
-        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum(CS.Delta_U[:,:,CS.ID_Turbines_Computed], dims=3);
+        CS.U_Farm .= u_ambient_zprofile .- sum(CS.Delta_U[:,:,CS.ID_Turbines_Computed], dims=3);
 
     elseif WindFarm.Superpos == "Momentum_Conserving"
         
@@ -71,8 +71,8 @@ function Superposition!(WindFarm, CS)
 
         # Now Compute the wake for the rotor points with converged farm convection velocity U_c_Farm
         CS.weighting_Factor[:,:,CS.ID_Turbines_Computed] .= (CS.u_c_vec[:,:,CS.ID_Turbines_Computed]./CS.U_c_Farm)
-        CS.weighting_Factor[CS.Delta_U .< (0.1 .* WindFarm.u_ambient_zprofile)] .= 1 #correction. For u_i < 0.1 of ambient wind speed -> no weighting is considered.
-        CS.U_Farm .= WindFarm.u_ambient_zprofile .- sum((CS.weighting_Factor[:,:,CS.ID_Turbines_Computed] .* CS.Delta_U[:,:,CS.ID_Turbines_Computed]), dims=3); 
+        CS.weighting_Factor[CS.Delta_U .< (0.1 .* u_ambient_zprofile)] .= 1 #correction. For u_i < 0.1 of ambient wind speed -> no weighting is considered.
+        CS.U_Farm .= u_ambient_zprofile .- sum((CS.weighting_Factor[:,:,CS.ID_Turbines_Computed] .* CS.Delta_U[:,:,CS.ID_Turbines_Computed]), dims=3); 
               
     else 
         error("Wrong choice of superposition method. Check 'Superpos' input. Possible entries: 'Linear_Rotorbased' and 'Momentum_Conserving'.")   

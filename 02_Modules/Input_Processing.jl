@@ -34,6 +34,7 @@ export generateWF, ComputationData
         userdata["P_Input"]   = zeros(1,1)              # Power coefficient - defined as .txt in "03_Turbine_Data"
         userdata["Ct_Input"]  = zeros(1,1)              # Thrust coefficient - defined as .txt in "03_Turbine_data"
         userdata["u_ambient_zprofile"] = zeros(1,1,1)   # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
+        userdata["u_ambient_zprofile_4Graphic"] = zeros(1,1,1)   # same as above but for comp. of full flow field
         #UserInput
         userdata["u_ambient"] = u_ambient               # [m/s] Ambient wind speed
         userdata["alpha"]     = alpha                   # [°] Geographical direction of the wind. -> N == 0°
@@ -103,12 +104,9 @@ export generateWF, ComputationData
             Normalize_to::Int;                      #Specify which turbines power the plot should be normalised to (If no normalisation is wanted, type: 0)
             # Advanced plots, advanced computation will commence
             Plot_wind_field::Bool;      #Plots wind field for one simple case
-            Plot_turbulence_field::Bool; #Plots turbulence field for one simple case
+            Plot_turbulence_field::Bool;#Plots turbulence field for one simple case
             Wind_Direction::Float64;    #Wind direction for plot (has to be a direction included during computation!)
-
-            z::Int;    
-            Z_Max::Float64;  #Maximum height
-            Z_Min::Float64;  #Minimum height
+            Resolution::Real;           #Pick resolution in terms of Diameter  
 
         ##########   Turbine Placeholders           ######################
             D::Float64;             # Turbine diameter in [m]
@@ -117,6 +115,7 @@ export generateWF, ComputationData
             Ct_Input::Matrix{Float64};    # Thrust coefficient - defined as .txt in "03_Turbine_data"
             #Atmospheric data placeholders:
             u_ambient_zprofile::Array{Float64,3}; # [m/s] height profile of the wind as vector of z coordinates resulting from amount of rotor resolution points 
+            u_ambient_zprofile_4Graphic::Array{Float64,3}; # same as above but for comp. of full flow field
         ##########   Direct User Input              ######################
             u_ambient::Float64; # [m/s] Ambient wind speed
             alpha::Real;     # [°] Geographical direction of the wind speed. -> N == 0°

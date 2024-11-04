@@ -6,7 +6,7 @@ Postprocessing module
 =#
 module Postprocessing
 using PlotlyJS
-export SimplePlots
+export SimplePlots, AdvancedPlots
 
 function SimplePlots(WindFarm, CS)
 #This function plots all simple requested plots from the input file    
@@ -210,10 +210,46 @@ function SimplePlots(WindFarm, CS)
 
 end#SimplePlots
 
-function AdvancedPlots(WindFarm, CS)
-#Run advanced computation
-#Then Plot
+function AdvancedPlots(WindFarm, GS)
+#This function plots the advances plots (flow fields) 
+    
+    if WindFarm.Plot_wind_field == true
+        z_level = WindFarm.H  # Replace with your specific Z-coordinate value
 
-end#AdvamcedPlots
+        # Find the closest z-level in GS.ZCoordinates
+        z_coords = GS.ZCoordinates[1, :, 1]  # Extract relevant z values from GS.ZCoordinates
+        z_level = z_coords[argmin(abs.(z_coords .- z_level))]  # Closest z-level
+
+        # Extract the relevant slices
+        x = GS.XCoordinates[:, 1, 1]                  # X coordinates (size 55)
+        y = GS.YCoordinates[1, :, 1]                  # Y coordinates (size 729)
+        u_values = GS.U_Farm[:, :, 1]                 # U_Farm values for contour plot
+
+        # Filter data based on the specified z level
+        y_filtered = y[z_coords .== z_level]            # Only y values where z matches z_level
+        u_filtered = u_values[:, z_coords .== z_level]  # Corresponding U_Farm values
+
+        # Create the 2D contour plot
+        plt = plot(
+            contour(
+                y = x./WindFarm.D,
+                x = y_filtered./WindFarm.D,
+                z = transpose(u_filtered),
+                colorscale = "Viridis",
+                contours_coloring = "heatmap",
+                colorbar_title = "U_Farm",
+                linewidth = 0  # Set contour line width to 0
+            ),
+            Layout(
+                xaxis_title = "x/D",  # X-axis label
+                yaxis_title = "y/D"   # Y-axis label
+            )
+        )
+    
+        # Display the plot
+        display(plt)
+    end
+
+end#AdvancedPlots
 
 end#Postprocessing Module
