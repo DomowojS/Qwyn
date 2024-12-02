@@ -6,13 +6,12 @@ include("02_Modules/Postprocessing.jl")
 using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Postprocessing, MAT
 
 
-
-
 function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
 #=  This Script excexutes Qwyn. 
     Inputs are taken from 01_Inputs.
     All function blocks can be found in 02_Modules
 =#
+
     t_start = time(); #Timer
     WF = generateWF("WF", "01_Inputs", u_ambient, alpha, TI_a) #Generate array consisting of all input data for each Input 
                                                                #file in "01_Inpts"
@@ -125,6 +124,9 @@ function Qwyn_AEP()
     Meaning for Input file:
     The Input file will, hence, be reduced to physical & numerical settings.
 =#
+
+
+
 end#Qwyn_AEP
 
 function Qwyn_Optimiser()

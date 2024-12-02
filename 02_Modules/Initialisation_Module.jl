@@ -364,9 +364,9 @@ function initGraphicArrays(WindFarm)
 
         ### Compute coordinates (in D) for wake computation ###
         # Dimenisons: Relative X Coordinate, Relative Y Coordinate, Z Coordinate, Absolute turbine number
-        XCoordinate = zeros(Float64, length(X_vec) , 1, WindFarm.N);  #Array for X coordinates of all points
+        XCoordinate = zeros(Float64, length(X_vec) , 1, WindFarm.N);               #Array for X coordinates of all points
         YCoordinate = zeros(Float64, length(X_vec) , Real_Rotor_Res, WindFarm.N);  #Array for Y Coordinates of all points
-        ZCoordinate = zeros(Float64, 1 , Real_Rotor_Res, 1);  #Vector containing all height coordinates
+        ZCoordinate = zeros(Float64, 1 , Real_Rotor_Res, 1);                       #Vector containing all height coordinates
 
         for i in 1:WindFarm.N
         # Create coordinate array of the structure: 1.Dim: Relative turbine, 2.Dim: RotorPoints, 3.Dim: Absolute turbine

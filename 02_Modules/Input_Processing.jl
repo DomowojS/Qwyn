@@ -107,6 +107,8 @@ export generateWF, ComputationData
             Plot_turbulence_field::Bool;#Plots turbulence field for one simple case
             Wind_Direction::Float64;    #Wind direction for plot (has to be a direction included during computation!)
             Resolution::Real;           #Pick resolution in terms of Diameter  
+            Height::Float64;            #At what height [m] do you want to plot the 2D wind field (Y-Z plane)?
+            Depth::Float64;             #At what Y coordinate [1/D] do you want to plot the cross section wind field (X-Z plane)?
 
         ##########   Turbine Placeholders           ######################
             D::Float64;             # Turbine diameter in [m]

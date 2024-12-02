@@ -41,7 +41,7 @@ userdata = OrderedDict{String, Any}(
     ##########      (5) Numerical parameters   ######################
     "Rotor_Discretization"  => "fibonacci", #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
                                             #Possible inputs: "gridded", "fibonacci" !!! Gridded has to be checked and corrected/ Thrown out
-    "Rotor_Res"             => 10,           #Number of points used to represent the rotor. Reccomendation: 100 for "griddeed" & XX for "fibonacci".
+    "Rotor_Res"             => 10,           #Number of points used to represent the rotor. Reccomendation: 100 for "gridded" & XX for "fibonacci".
     
         # For Momentum conserving superposition only:
         "Uc_Res"                => 1000,      #Number of points to comppute wake for convection velocity (at each relevant streamwise position x). Has to be > 4
@@ -58,12 +58,16 @@ userdata = OrderedDict{String, Any}(
     "Plot_turbulence"   => false,   #Plots average inflow turbulence of several turbines
     "Turbine_Identification"    => [4, 12, 20, 28, 36, 44, 52, 60, 68, 76], #Identify, which turbines should be included in the plot
     "Normalize_to"              => 4,                                      #Specify which turbines power the plot should be normalised to (If no normalisation is wanted, type: 0)
-    # Advanced plots, advanced computation will commence
-    "Plot_wind_field"       => true,   #Plots wind field for one simple case
+    # 2D surface plots, advanced computation will commence
+    "Plot_wind_field"       => false,   #Plots wind field for one simple case
     "Plot_turbulence_field" => false,   #Plots turbulence field for one simple case
     "Wind_Direction"        => 270.0,   #Wind direction for plot (has to be a direction included during computation!)
-    "Resolution"            => 0.3,     #Pick resolution in terms of Diameter  
-
+    "Resolution"            => 0.5,     #Pick resolution in terms of Diameter  
+    "Height"                => 70.0,    #At what height [m] do you want to plot the 2D wind field (Y-Z plane)?
+    "Depth"                 => 0.0,     #At what Y coordinate [1/D] do you want to plot the cross section wind field (X-Z plane)?
+    ## Full 3D plot lots of RAM required. Uses same resolution as 2D surface plots
+    #"Plot_wind_field_3D"       => false,   #Plots wind field for one simple case
+    #"Plot_turbulence_field_3D" => false,   #Plots turbulence field for one simple case
 
     ##########   Literature Input              ######################
     #= These Numbers are placeholders. They overwritten by data from literature.
