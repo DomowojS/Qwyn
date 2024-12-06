@@ -4,8 +4,8 @@ Module for:
     2) Initialising arrays & allocate space for computation
 =#
 module Input_Processing
-using Pkg, FileIO, Parameters, InteractiveUtils, DataStructures, Revise
-export generateWF, ComputationData
+using Pkg, FileIO, Parameters, InteractiveUtils, DataStructures, Revise, DelimitedFiles
+export generateWF, ComputationData, read_Windrose_data
 
     function generateWF(prefix::AbstractString, folder::AbstractString, u_ambient::Real, alpha::Real, TI_a::Real)
     #Function to generate struct instances from files in Input folder
@@ -45,7 +45,6 @@ export generateWF, ComputationData
         # Return the Windfarm struct by passing all arguments
         return Windfarm(args...)
     end
-
 
     mutable struct Windfarm
     #Input struct definition
@@ -123,5 +122,40 @@ export generateWF, ComputationData
             alpha::Real;     # [°] Geographical direction of the wind speed. -> N == 0°
             TI_a::Real;      # [-] Ambient turbulence intensity in [-]
     end # mutable struct Windfarm
+
+    function read_Windrose_data(filepath)
+    #Reads in windrose data  
+        try
+            
+            # Check if file exists
+            if !isfile(filepath)
+                error("File not found: $filepath")
+            end
+            
+            # Read the file
+            data = readdlm(filepath, '\t')
+            
+            # Check if file has exactly 3 columns
+            if size(data, 2) != 3
+                error("File must contain exactly 3 columns")
+            end
+            
+            # Check if file has at least header plus one data row
+            if size(data, 1) < 2
+                error("File must contain a header row and at least one data row")
+            end
+            
+            # Extract data (all rows except first)
+            angles = data[2:end, 1]       # First column
+            speeds = data[2:end, 2]       # Second column
+            frequencies = data[2:end, 3]   # Third column
+            
+            return angles, speeds, frequencies
+            
+        catch e
+            println("Error reading file: ", e)
+            rethrow(e)
+        end
+    end#read_Windrose_data
 
 end #module
