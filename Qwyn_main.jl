@@ -124,10 +124,10 @@ function Qwyn_AEP(TI_a::Real ,path2windrose)
 
     Results=Vector(undef, length(WF)); #Preassign result struct
     AEP_Results=Vector(undef, length(WF));     #Preassign AEP-result vector
-    Powers_AllCases=Vector(undef, length(angles))
+    Powers_AllCases=Vector{Float64}(undef, length(angles))
 
     # Iterate over defined cases. Compute one by one (according to settings)
-    i=0;#Loop counte
+    i=0;#Loop counter
     for WindFarm in WF 
     t_start_loop = time();#Looptimer       
     i=i+1;
@@ -137,40 +137,44 @@ function Qwyn_AEP(TI_a::Real ,path2windrose)
 
     ######## START LOOP OVER all wind speeds HERE ############################
         
-        last_printed_percent = 0 #For display output
-
+        last_printed_percent = Threads.Atomic{Int}(0)  # Atomic counter for progress
+        
         Threads.@threads for case in 1:length(frequencies)
+
+            # Create a deep copy of WindFarm for this thread
+            local_WindFarm = deepcopy(WindFarm)
+
             # Assign right wind speed & angle for this iteration
-            WindFarm.u_ambient = speeds[case] #speed
-            WindFarm.alpha     = angles[case] #angle
+            local_WindFarm.u_ambient = speeds[case] #speed
+            local_WindFarm.alpha     = angles[case] #angle
 
             #Initialise all arrays & matrices needed for the computation.
-            WindFarm, CS = initCompArrays(WindFarm) #Initialises mutable struct "CA" which contains necessary 
+            local_WindFarm, CS = initCompArrays(local_WindFarm) #Initialises mutable struct "CA" which contains necessary 
                                                     #computation arrays & computes coordinates acc. to user Input.
 
-            LoadTurbineDATA!(WindFarm, CS)          #Update Input & computation structs with provided power & 
+            LoadTurbineDATA!(local_WindFarm, CS)          #Update Input & computation structs with provided power & 
                                                     #thrust curves
             
-            WindFarm.u_ambient_zprofile, CS = LoadAtmosphericData(WindFarm,CS)      #Update Input & computation structs with atmospheric data &
+            local_WindFarm.u_ambient_zprofile, CS = LoadAtmosphericData(local_WindFarm,CS)      #Update Input & computation structs with atmospheric data &
                                                                                     #(wind shear profile, wind rose etc.)
             
-            FindStreamwiseOrder!(WindFarm, CS)
+            FindStreamwiseOrder!(local_WindFarm, CS)
 
 
 
             # Iterating over turbine rows
             for CS.i=1:maximum(CS.CompOrder)
-                FindComputationRegion!(WindFarm, CS)
+                FindComputationRegion!(local_WindFarm, CS)
                 
                 if any(CS.ID_Turbines != 0) # Check if any turbine's wake has to be computed
 
-                Single_Wake_Computation!(WindFarm, CS)  #Compute single wake effect
+                Single_Wake_Computation!(local_WindFarm, CS)  #Compute single wake effect
                 
-                Superposition!(WindFarm, CS, WindFarm.u_ambient_zprofile)            #Compute mixed wake
+                Superposition!(local_WindFarm, CS, local_WindFarm.u_ambient_zprofile)            #Compute mixed wake
                 
-                getTurbineInflow!(WindFarm, CS)         #Evaluate new inflow data
+                getTurbineInflow!(local_WindFarm, CS)         #Evaluate new inflow data
                 
-                getNewThrustandPower!(WindFarm, CS)     #Evaluate new operation properties
+                getNewThrustandPower!(local_WindFarm, CS)     #Evaluate new operation properties
 
                 end
             end
@@ -180,10 +184,10 @@ function Qwyn_AEP(TI_a::Real ,path2windrose)
             Powers_AllCases[case]=CS.TotalPower;   #Safe computed power for this case
         
              # Calculate and display progress every full percentage
-                progress = round(100 * case / length(frequencies))  # Calculate the current percentage
-                if progress != last_printed_percent
+                progress = round(Int, 100 * case / length(frequencies))
+                old_progress = Threads.atomic_cas!(last_printed_percent, progress-1, progress)
+                if old_progress != progress
                     println("Progress: $progress%")
-                    last_printed_percent = progress  # Update the last printed percentage
                 end
 
         end
