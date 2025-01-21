@@ -2,8 +2,9 @@ include("02_Modules/PKG_Manager.jl")            #pck manager (for own overiew ->
 include("02_Modules/Input_Processing.jl")       #Module to process input data
 include("02_Modules/Initialisation_Module.jl")  #Module for array initialisation/ space preallocation
 include("02_Modules/SimpleComputation.jl")      #Module for simple computation.
+include("02_Modules/Optimisation.jl")      #Module for optimisation
 include("02_Modules/Postprocessing.jl")
-using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Postprocessing, MAT, Base.Threads
+using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Optimisation, .Postprocessing, MAT, Base.Threads
 
 
 function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
@@ -212,7 +213,7 @@ function Qwyn_AEP(TI_a::Real ,path2windrose)
 
 end#Qwyn_AEP
 
-function Qwyn_Optimiser()
+function Qwyn_Layout_Optimiser()
 # Optimisation functions will be added here.
 
 end#Qwyn_Optimiser
