@@ -41,7 +41,7 @@ userdata = OrderedDict{String, Any}(
     ##########      (5) Numerical parameters   ######################
     "Rotor_Discretization"  => "fibonacci", #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
                                             #Possible inputs: "gridded", "fibonacci" !!! Gridded has to be checked and corrected/ Thrown out
-    "Rotor_Res"             => 10,           #Number of points used to represent the rotor. Reccomendation: 100 for "gridded" & XX for "fibonacci".
+    "Rotor_Res"             => 4,           #Number of points used to represent the rotor. Reccomendation: 100 for "gridded" & XX for "fibonacci".
     
         # For Momentum conserving superposition only:
         "Uc_Res"                => 1000,      #Number of points to comppute wake for convection velocity (at each relevant streamwise position x). Has to be > 4

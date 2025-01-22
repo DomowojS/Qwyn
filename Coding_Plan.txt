@@ -35,3 +35,20 @@ Function Blocks:
         5.2) Plot Graphs as requestet (using results from 5.1)) 
     6) Safe & store results 
     
+
+
+
+
+
+Reminder ToDo's:
+
+Set minimum distance and outer boundaries of farm externally (in config file)
+
+
+---> Set x_vec and y_vec to be optimisable intities within WindFarm (Ask claude:
+
+Ok, this is not an option as this would alter the code way too far and all those computation functions are used for different functionalities, too. Would it be possible if I would define WindFarm later, defining WindFarm.x_vec and WindFarm.y_vec to be JuMP variables? It would be an option to recode it that way, that WindFarm is created during SetAndRunOptimiser or that x_vec and y_vec are replaced by the JUMP variables.
+)
+
+
+---> Dont use jump. Use Optimisation.jl

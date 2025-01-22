@@ -8,8 +8,8 @@ using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Optimisati
 
 
 function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
-#=  This Script excexutes Qwyn. 
-    Inputs are taken from 01_Inputs.
+#=  This function excexutes Qwyn. 
+    Input configs are taken from 01_Inputs.
     All function blocks can be found in 02_Modules
 =#
 
@@ -107,8 +107,8 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
 end#Qwyn_Simple
 
 function Qwyn_AEP(TI_a::Real ,path2windrose)
-#=  This Script excexutes Qwyn. 
-    Inputs are taken from 01_Inputs.
+#=  This functions runs an AEP computation. 
+    Input configs are taken from 01_Inputs.
     All function blocks can be found in 02_Modules
 
     Inputs:
@@ -211,11 +211,17 @@ function Qwyn_AEP(TI_a::Real ,path2windrose)
     println("Total processing time of $i case(s): $(round(time()-t_start, digits = 4))s.")
     return AEP_Results #Returns results & Inputfiles as structs
 
-
 end#Qwyn_AEP
 
 function Qwyn_Layout_Optimiser(TI_a::Real ,path2windrose)
-# Optimisation functions will be added here.
+#=  This functions optimises the turbine coordinates for higher AEP. 
+    Inputs configs are taken from 01_Inputs.
+    All function blocks can be found in 02_Modules
+
+    Inputs:
+    1) Turbulence Intensity
+    2) Path to wind rose .txt file
+=#
 
 t_start = time(); #Timer
 
@@ -225,35 +231,8 @@ angles, speeds, frequencies=read_Windrose_data(path2windrose)
 WF = generateWF("WF", "01_Inputs", speeds[1], angles[1], TI_a) #Generate array consisting of all input data for each Input 
                                                                #file in "01_Inpts"
 
-####################### First add some Constraints & Stuff
-
-
-#(Constraint Functions will be located in the Optim Module)
-
-
-###################### Define Target function (Actually defined )
-
-# (Actual Target function will be located in the Optim Module)
-
-##################### Run Optimisation
-
-##################### Evaluate 
-# (ReEvaluate The AEP using a second string in the Input)
-# (If no second string is given - same wind rose as for Optimisation is used for Evaluation of the Optimum)
-
-#################### Print Result & Exit
-# Print optimal Turbine Locations.
-
-
-
-
-
-
-
-
-
-AEP_Results=Vector(undef, length(WF));     #Preassign AEP-result vector
-Powers_AllCases=Vector{Float64}(undef, length(angles))
+#Preassign result vectors
+Layout_Optim_Results=Vector(undef, length(WF));                #Preassign AEP-result vector
 
 # Iterate over defined cases. Compute one by one (according to settings)
 i=0;#Loop counter
@@ -261,84 +240,29 @@ for WindFarm in WF
 t_start_loop = time();#Looptimer       
 i=i+1;
     println("###########################")
-    println("Computing: ", WindFarm.name)   #Terminal output for which input file is being processed
+    println("Optimising: ", WindFarm.name)   #Terminal output for which input file is being processed
     println("###########################")
-
-    
-P_vec_AllCases=Vector{Array{Float64,3}}(); #Reset P_vec from Config to Config
-
-
-######## START LOOP OVER all wind speeds HERE ############################
-    
-    last_printed_percent = Threads.Atomic{Int}(0)  # Atomic counter for progress
-    
-    for case in 1:length(frequencies)
-
-        # Assign right wind speed & angle for this iteration
-        WindFarm.u_ambient = speeds[case] #speed
-        WindFarm.alpha     = angles[case] #angle
-
-        #Initialise all arrays & matrices needed for the computation.
-        WindFarm, CS = initCompArrays(WindFarm) #Initialises mutable struct "CA" which contains necessary 
-                                                #computation arrays & computes coordinates acc. to user Input.
-
-        LoadTurbineDATA!(WindFarm, CS)          #Update Input & computation structs with provided power & 
-                                                #thrust curves
+    OptimalAEP, x_vec_optimal, y_vec_optimal = SetAndRunOptimiser(WindFarm, frequencies);
+ 
+    # Display end of computation 
+    println("Optimisation finished")
+    println("Optimisation time of input No.$i: $(round(t_end_loop, digits = 5)) s.")
+    println("###########################")
         
-        WindFarm.u_ambient_zprofile, CS = LoadAtmosphericData(WindFarm,CS)      #Update Input & computation structs with atmospheric data &
-                                                                                #(wind shear profile, wind rose etc.)
-        
-        FindStreamwiseOrder!(WindFarm, CS)
+    # Update timer
+    t_end_loop = time()-t_start_loop;
+
+    # Write to result struct
+    Layout_Optim_Results[i] = Layout_Optim_Results(WindFarm.name, t_end_loop, OptimalAEP, WindFarm.x_vec, WindFarm.y_vec, x_vec_optimal, y_vec_optimal);
+
+########## Add normal "AEP" function call here --> For using 
 
 
-
-        # Iterating over turbine rows
-        for CS.i=1:maximum(CS.CompOrder)
-            FindComputationRegion!(WindFarm, CS)
-            
-            if any(CS.ID_Turbines != 0) # Check if any turbine's wake has to be computed
-
-            Single_Wake_Computation!(WindFarm, CS)  #Compute single wake effect
-            
-            Superposition!(WindFarm, CS, WindFarm.u_ambient_zprofile)            #Compute mixed wake
-            
-            getTurbineInflow!(WindFarm, CS)         #Evaluate new inflow data
-            
-            getNewThrustandPower!(WindFarm, CS)     #Evaluate new operation properties
-
-            end
-        end
-            
-        getTotalPower!(CS)  #Compute total power of the wind farm 
-
-        Powers_AllCases[case]=CS.TotalPower;   #Save computed power for this case
-        push!(P_vec_AllCases, CS.P_vec)           #Save computed power for each single turbine for this case
-
-         # Calculate and display progress every full percentage
-            progress = round(Int, 100 * case / length(frequencies))
-            old_progress = Threads.atomic_cas!(last_printed_percent, progress-1, progress)
-            if old_progress != progress
-                println("Progress: $progress%")
-            end
-
-    end
-        
-        TotalAEP=sum(Powers_AllCases.*frequencies) * 8760;               #Compute total AEP by multyplying power with frequencies
-        TotalAEP_SingleTurbine=sum(P_vec_AllCases.*frequencies) * 8760; #Compute total AEP by multyplying power with frequencies
-    
-        t_end_loop = time()-t_start_loop;
-
-
-        AEP_Results[i] = AEP(WindFarm.name, t_end_loop, TotalAEP, Powers_AllCases,  reshape(TotalAEP_SingleTurbine, WindFarm.N), P_vec_AllCases, angles, speeds, frequencies);
-
-       # Display end of computation 
-        println("Computation finished")
-        println("Computation time of input No.$i: $(round(t_end_loop, digits = 5)) s.")
-        println("###########################")
 end#Loop over Input structs
 
+
 println("Total processing time of $i case(s): $(round(time()-t_start, digits = 4))s.")
-return AEP_Results #Returns results & Inputfiles as structs                                                          
+return Layout_Optim_Results #Returns results & Inputfiles as structs                                                       
 
 end#Qwyn_Optimiser
 
@@ -407,7 +331,20 @@ struct AEP
     frequencies::Vector{Float64};
 end
 
-
+struct Layout_Optim_Results
+    # Struct for AEP Resutls
+        name::String;
+        CompTime::Float64;
+        #Initial_AEP::Float64;
+        Optimised_AEP::Float64;
+        #Evaluated_AEP::Float64;
+        #Optimised_TotalAEP_SingleTurbine::Vector{Float64};
+        #Evaluated_TotalAEP_SingleTurbine::Vector{Float64};
+        x_coordinates_initial::Vector{Float64};
+        y_coordinates_initial::Vector{Float64};
+        x_coordinates_optimal::Vector{Float64};
+        y_coordinates_optimal::Vector{Float64};
+    end
 
 
 
