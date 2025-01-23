@@ -223,46 +223,47 @@ function Qwyn_Layout_Optimiser(TI_a::Real ,path2windrose)
     2) Path to wind rose .txt file
 =#
 
-t_start = time(); #Timer
+    t_start = time(); #Timer
 
-#Read provided wind rose data
-angles, speeds, frequencies=read_Windrose_data(path2windrose)
+    #Read provided wind rose data
+    angles, speeds, frequencies=read_Windrose_data(path2windrose)
 
-WF = generateWF("WF", "01_Inputs", speeds[1], angles[1], TI_a) #Generate array consisting of all input data for each Input 
-                                                               #file in "01_Inpts"
+    WF = generateWF("WF", "01_Inputs", speeds[1], angles[1], TI_a) #Generate array consisting of all input data for each Input 
+                                                                   #file in "01_Inpts"
 
-#Preassign result vectors
-Layout_Optim_Results=Vector(undef, length(WF));                #Preassign AEP-result vector
+    #Preassign result vectors
+    Layout_Optim_Results=Vector(undef, length(WF));                #Preassign Optim-result vector
+    Powers_AllCases=Vector{Float64}(undef, length(angles))         #Preassign Temporary result vector used within Optim target fct
 
-# Iterate over defined cases. Compute one by one (according to settings)
-i=0;#Loop counter
-for WindFarm in WF 
-t_start_loop = time();#Looptimer       
-i=i+1;
-    println("###########################")
-    println("Optimising: ", WindFarm.name)   #Terminal output for which input file is being processed
-    println("###########################")
-    OptimalAEP, x_vec_optimal, y_vec_optimal = SetAndRunOptimiser(WindFarm, frequencies);
- 
-    # Display end of computation 
-    println("Optimisation finished")
-    println("Optimisation time of input No.$i: $(round(t_end_loop, digits = 5)) s.")
-    println("###########################")
+    # Iterate over defined cases. Compute one by one (according to settings)
+    i=0;#Loop counter
+    for WindFarm in WF 
+    t_start_loop = time();#Looptimer       
+    i=i+1;
+        println("###########################")
+        println("Optimising: ", WindFarm.name)   #Terminal output for which input file is being processed
+        println("###########################")
+        OptimalAEP, x_vec_optimal, y_vec_optimal = SetAndRunOptimiser(WindFarm, speeds, angles, frequencies, Powers_AllCases);
         
-    # Update timer
-    t_end_loop = time()-t_start_loop;
+        # Update timer
+        t_end_loop = time()-t_start_loop;
 
-    # Write to result struct
-    Layout_Optim_Results[i] = Layout_Optim_Results(WindFarm.name, t_end_loop, OptimalAEP, WindFarm.x_vec, WindFarm.y_vec, x_vec_optimal, y_vec_optimal);
+        # Display end of computation 
+        println("Optimisation finished")
+        println("Optimisation time of input No.$i: $(round(t_end_loop, digits = 5)) s.")
+        println("###########################")
+            
+        # Write to result struct
+        Layout_Optim_Results[i] = Layout_Optim_Results_Struct(WindFarm.name, t_end_loop, OptimalAEP, WindFarm.x_vec, WindFarm.y_vec, x_vec_optimal, y_vec_optimal);
 
-########## Add normal "AEP" function call here --> For using 
+    ########## Add normal "AEP" function call here --> For using 
 
 
-end#Loop over Input structs
+    end#Loop over Input structs
 
 
-println("Total processing time of $i case(s): $(round(time()-t_start, digits = 4))s.")
-return Layout_Optim_Results #Returns results & Inputfiles as structs                                                       
+    println("Total processing time of $i case(s): $(round(time()-t_start, digits = 4))s.")
+    return Layout_Optim_Results #Returns results & Inputfiles as structs                                                       
 
 end#Qwyn_Optimiser
 
@@ -331,20 +332,16 @@ struct AEP
     frequencies::Vector{Float64};
 end
 
-struct Layout_Optim_Results
+struct Layout_Optim_Results_Struct
     # Struct for AEP Resutls
         name::String;
         CompTime::Float64;
-        #Initial_AEP::Float64;
         Optimised_AEP::Float64;
-        #Evaluated_AEP::Float64;
-        #Optimised_TotalAEP_SingleTurbine::Vector{Float64};
-        #Evaluated_TotalAEP_SingleTurbine::Vector{Float64};
         x_coordinates_initial::Vector{Float64};
         y_coordinates_initial::Vector{Float64};
         x_coordinates_optimal::Vector{Float64};
         y_coordinates_optimal::Vector{Float64};
-    end
+end
 
 
 
