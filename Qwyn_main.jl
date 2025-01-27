@@ -243,8 +243,20 @@ function Qwyn_Layout_Optimiser(TI_a::Real ,path2windrose)
         println("###########################")
         println("Optimising: ", WindFarm.name)   #Terminal output for which input file is being processed
         println("###########################")
-        OptimalAEP, x_vec_optimal, y_vec_optimal = SetAndRunOptimiser(WindFarm, speeds, angles, frequencies, Powers_AllCases);
+        OptimalAEP, x_vec_optimal, y_vec_optimal, ret, num_evals = SetAndRunOptimiser(WindFarm, speeds, angles, frequencies, Powers_AllCases);
         
+        # Give some useroutpuy
+        println(
+            """
+            Optimal AEP             : $OptimalAEP
+            Optimal x coordinates   : $x_vec_optimal
+            Optimal y coordinates   : $y_vec_optimal
+            solution status         : $ret
+            # function evaluation   : $num_evals
+            """
+        )
+    
+
         # Update timer
         t_end_loop = time()-t_start_loop;
 
