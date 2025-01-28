@@ -4,7 +4,7 @@ include("02_Modules/Initialisation_Module.jl")  #Module for array initialisation
 include("02_Modules/SimpleComputation.jl")      #Module for simple computation.
 include("02_Modules/Optimisation.jl")      #Module for optimisation
 include("02_Modules/Postprocessing.jl")
-using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Optimisation, .Postprocessing, MAT, Base.Threads
+using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Optimisation, .Postprocessing, MAT, Base.Threads, PlotlyJS, JLD2, FileIO
 
 
 function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
@@ -255,7 +255,10 @@ function Qwyn_Layout_Optimiser(TI_a::Real ,path2windrose)
             # function evaluation   : $num_evals
             """
         )
-    
+
+        # Quick & dirty machine position plot
+        p = plot_turbine_positions(x_vec_optimal, y_vec_optimal)
+        display(p)
 
         # Update timer
         t_end_loop = time()-t_start_loop;
@@ -309,6 +312,111 @@ function Qwyn_Graphic(WindFarm, CS)
 
 end#Qwyn_Graphic
 
+function plot_turbine_positions(x_vec_optimal, y_vec_optimal)
+# Plots turbine positions with boundaries after optimisation
+
+    # Create hover text for each point with correct HTML formatting
+    hover_text = [string("Turbine ", i, "<br>", 
+                        "x: ", round(x_vec_optimal[i], digits=2), "<br>",
+                        "y: ", round(y_vec_optimal[i], digits=2))
+                 for i in 1:length(x_vec_optimal)]
+    
+    # Create the scatter trace for turbines
+    turbine_trace = scatter(
+        x = x_vec_optimal,
+        y = y_vec_optimal,
+        mode = "markers+text",
+        marker = attr(
+            size = 15,
+            color = "rgb(31, 119, 180)",
+            line = attr(color = "rgb(0, 0, 0)", width = 1)
+        ),
+        text = ["T$i" for i in 1:length(x_vec_optimal)],
+        textposition = "top center",
+        hovertext = hover_text,
+        hoverinfo = "text",
+        name = "Turbines"
+    )
+    
+    # Create boundary box
+    boundary_trace = scatter(
+        #x = [minimum(x_vec_optimal), maximum(x_vec_optimal), maximum(x_vec_optimal), minimum(x_vec_optimal), minimum(x_vec_optimal)],  # Close the box by returning to start
+        #y = [minimum(y_vec_optimal), minimum(y_vec_optimal), maximum(y_vec_optimal), maximum(y_vec_optimal), minimum(y_vec_optimal)],
+        #For Horns Rev
+        x = [6, 69, 63, 0, 6],  # Close the box by returning to start
+        y = [-48.63, -48.63, 0, 0, -48.63],
+        mode = "lines",
+        line = attr(
+            color = "red",
+            width = 2,
+            dash = "dash"
+        ),
+        name = "Outer Boundaries"
+    )
+    
+    # Create circles for minimum distance
+    traces = GenericTrace{Dict{Symbol, Any}}[turbine_trace, boundary_trace]
+    
+    for i in 1:length(x_vec_optimal)
+        # Generate points for a circle
+        t = range(0, 2π, length=100)
+        circle_x = x_vec_optimal[i] .+ 3.7 .* cos.(t)
+        circle_y = y_vec_optimal[i] .+ 3.7 .* sin.(t)
+        
+        circle_trace = scatter(
+            x = circle_x,
+            y = circle_y,
+            mode = "lines",
+            line = attr(
+                color = "rgba(169, 169, 169, 0.3)",  # Semi-transparent gray
+                width = 1
+            ),
+            showlegend = i == 1,  # Only show in legend once
+            name = "Min Distance (3.7)",
+            hoverinfo = "skip"
+        )
+        push!(traces, circle_trace)
+    end
+    
+    # Create the layout
+    layout = Layout(
+        title = "Optimal Turbine Positions",
+        xaxis = attr(
+            title = "X Coordinate",
+            zeroline = true,
+            gridcolor = "rgb(235, 235, 235)",
+            showgrid = true,
+            #ange = [minimum(x_vec_optimal)-1, maximum(x_vec_optimal)+1]  # Slightly larger than boundaries for visibility
+            # For HR1
+            range = [0-1, 69+1]  # Slightly larger than boundaries for visibility
+        ),
+        yaxis = attr(
+            title = "Y Coordinate",
+            zeroline = true,
+            gridcolor = "rgb(235, 235, 235)",
+            showgrid = true,
+            scaleanchor = "x",
+            scaleratio = 1,
+            #range = [minimum(y_vec_optimal)-1, maximum(y_vec_optimal)+1]  # Slightly larger than boundaries for visibility
+            # For HR1
+            range = [-48.63-1, 0+1]  # Slightly larger than boundaries for visibility
+        ),
+        hovermode = "closest",
+        showlegend = true,
+        legend = attr(
+            x = 1.1,
+            y = 1.0
+        ),
+        plot_bgcolor = "rgb(250, 250, 250)",
+        width = 900,  # Increased width to accommodate legend
+        height = 600
+    )
+    
+    # Create and return the plot with all traces
+    p = plot(traces, layout)
+    
+    return p
+end
 ########## Functional elements ############
 
 # Consice result struct

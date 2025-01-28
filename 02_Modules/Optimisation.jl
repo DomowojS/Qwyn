@@ -24,8 +24,13 @@ function SetAndRunOptimiser(WindFarm, speeds, angles, frequencies, Powers_AllCas
     # Optimiser settings
 
     opt = NLopt.Opt(:LN_COBYLA, WindFarm.N*2)  # 2*Turbine number design variables (x & y coordinates)        
-    NLopt.lower_bounds!(opt, vcat(fill(minimum(WindFarm.x_vec), n), fill(minimum(WindFarm.y_vec), n)))      # Lower boundaries (Box condition)
-    NLopt.upper_bounds!(opt, vcat(fill(maximum(WindFarm.x_vec), n), fill(maximum(WindFarm.y_vec), n)))      # Upper boundaries (Box condition)
+    #NLopt.lower_bounds!(opt, vcat(fill(minimum(WindFarm.x_vec), n), fill(minimum(WindFarm.y_vec), n)))      # Lower boundaries (Box condition)
+    #NLopt.upper_bounds!(opt, vcat(fill(maximum(WindFarm.x_vec), n), fill(maximum(WindFarm.y_vec), n)))      # Upper boundaries (Box condition)
+
+    # Only For Horns Rev!
+    NLopt.lower_bounds!(opt, vcat(fill(-Inf, n), fill(minimum(WindFarm.y_vec), n)))
+    NLopt.upper_bounds!(opt, vcat(fill(Inf, n), fill(maximum(WindFarm.y_vec), n)))
+    
     
     #Tolerance setting
     NLopt.xtol_rel!(opt, 1e-4)  
@@ -33,13 +38,27 @@ function SetAndRunOptimiser(WindFarm, speeds, angles, frequencies, Powers_AllCas
     #Set Objective function
     NLopt.min_objective!(opt, (x, grad) -> objective_func(x, grad, WindFarm, speeds, angles, frequencies, Powers_AllCases))
     
-        # Add pairwise distance constraints
+    # Add pairwise distance constraints
     for i in 1:WindFarm.N
         for j in (i+1):WindFarm.N
             NLopt.inequality_constraint!(opt, 
                 (x, g) -> distance_constraint(x, g, i, j, min_distance), 
                 1e-8)
         end
+    end
+
+    # Only for Horns Rev1
+    # Add slope constraints for x coordinates
+    for i in 1:n
+        # Lower bound slope constraint: x >= -6/48.63 * y
+        NLopt.inequality_constraint!(opt,
+            (x, g) -> slope_constraint_lower(x, g, i, n),
+            1e-8)
+        
+        # Upper bound slope constraint: x <= (-6/48.63 * y) + 69
+        NLopt.inequality_constraint!(opt,
+            (x, g) -> slope_constraint_upper(x, g, i, n),
+            1e-8)
     end
 
     min_f, min_x, ret = NLopt.optimize(opt, vcat(WindFarm.x_vec, WindFarm.y_vec))
@@ -150,7 +169,19 @@ function get_machine_distance(x::Vector, i::Int, j::Int)
     xj, yj = x[j], x[j + N]
     # Compute Euclidean distance
     return sqrt((xi - xj)^2 + (yi - yj)^2)
+end#get_machine_distance
+
+
+function slope_constraint_lower(x, g, i, n)
+    # x[i] >= -6/48.63 * x[i+n]
+    # Rearrange to: (-6/48.63 * y) - x <= 0
+    return (-6/48.63 * x[i+n]) - x[i]  # Returns <= 0 when constraint is satisfied
 end
 
+function slope_constraint_upper(x, g, i, n)
+    # x[i] <= (-6/48.63 * x[i+n]) + 69
+    # Already in form: x - (-6/48.63 * y) - 69 <= 0
+    return x[i] - (-6/48.63 * x[i+n]) - 69  # Returns <= 0 when constraint is satisfied
+end
 
 end
