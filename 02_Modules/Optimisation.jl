@@ -179,9 +179,9 @@ function slope_constraint_lower(x, g, i, n)
 end
 
 function slope_constraint_upper(x, g, i, n)
-    # x[i] <= (-6/48.63 * x[i+n]) + 69
-    # Already in form: x - (-6/48.63 * y) - 69 <= 0
-    return x[i] - (-6/48.63 * x[i+n]) - 69  # Returns <= 0 when constraint is satisfied
+    # x[i] <= (-6/48.63 * x[i+n]) + 63
+    # Already in form: x - (-6/48.63 * y) - 63 <= 0
+    return x[i] - (-6/48.63 * x[i+n]) - 63  # Returns <= 0 when constraint is satisfied
 end
 
 end
