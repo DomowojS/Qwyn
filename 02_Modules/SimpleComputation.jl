@@ -21,7 +21,8 @@ function FindComputationRegion!(WindFarm, CS)
 end
 
 function Single_Wake_Computation!(WindFarm, CS)
-## For Ishihara - single wake model:
+
+    ## For Ishihara - single wake model:
     CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f = ComputeEmpiricalVars(CS.Ct_vec, CS.TI_0_vec, 
     CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f, CS.ID_Turbines); # Compute empirical values
     
@@ -29,6 +30,7 @@ function Single_Wake_Computation!(WindFarm, CS)
     if WindFarm.Superpos == "Momentum_Conserving"
         Ishihara_WakeModel!(WindFarm, CS, CS.Delta_U_for_Uc, CS.Delta_TI_for_Uc, CS.XCoordinates, CS.Z_for_Uc, CS.r_for_Uc, CS.Computation_Region_ID_for_Uc, CS.ID_Turbines, CS.sigma_for_Uc, CS.sigma_m_for_Uc, CS.Lambda_for_Uc, CS.k1_for_Uc, CS.k2_for_Uc, CS.delta_for_Uc, true) 
     end
+
 
 end#Single_Wake_Computation
 
@@ -86,8 +88,8 @@ end#Superposition
 
 function getTurbineInflow!(WindFarm, CS) 
 # Evaluate new inflow data
-    CS.u_0_vec .= reshape(mean(mean(CS.U_Farm, dims=3), dims=2), (1,1,WindFarm.N))    #Compute mean inflow velocity for each turbine
-    CS.TI_0_vec .= reshape(mean(mean(CS.TI_Farm, dims=3), dims=2), (1,1,WindFarm.N))  #Compute mean Turbulence intensity for each turbine
+    CS.u_0_vec .= reshape(sum(CS.U_Farm .* CS.RotorPointWeights, dims=2)./sum(CS.RotorPointWeights, dims=2), (1,1,WindFarm.N))    #Compute mean inflow velocity for each turbine
+    CS.TI_0_vec .= reshape(sum(CS.TI_Farm .* CS.RotorPointWeights, dims=2)./sum(CS.RotorPointWeights, dims=2), (1,1,WindFarm.N))  #Compute mean Turbulence intensity for each turbine
 end#getTurbineInflow
 
 function getNewThrustandPower!(WindFarm, CS)
@@ -197,10 +199,12 @@ function Meandering_Correction(sigma_m::Array{Float64}, psi::Array{Float64}, Lam
     #Compute integral length scale of representative eddy   
     Lambda[:,:,ID_Turbines]  .= (0.4 .* ZCoordinates) ./ psi[:,:,ID_Turbines]
     #Compute corrected wake width 
+
     sigma_m[:,:,ID_Turbines] .= sqrt.((2 .* psi[:,:,ID_Turbines] .* Lambda[:,:,ID_Turbines].^2) 
                                 .* ((XCoordinates[:,:,ID_Turbines]./(u_c_vec[:,:,ID_Turbines].*Lambda[:,:,ID_Turbines])) 
                                 .+ exp.(-XCoordinates[:,:,ID_Turbines]./(u_c_vec[:,:,ID_Turbines].*Lambda[:,:,ID_Turbines])) 
                                 .- 1))  
+    
     return psi, Lambda, sigma_m          
 end#Meandering_Correction
     

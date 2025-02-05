@@ -84,9 +84,8 @@ function AEP4Layout_Optim(WindFarm, speeds, angles, frequencies, Powers_AllCases
 =#
     
     ######## START LOOP OVER all wind speeds HERE ############################
-        
+    
         for case in 1:length(frequencies)
-
             # Assign right wind speed & angle for this iteration
             WindFarm.u_ambient = speeds[case] #speed
             WindFarm.alpha     = angles[case] #angle
@@ -104,25 +103,34 @@ function AEP4Layout_Optim(WindFarm, speeds, angles, frequencies, Powers_AllCases
             FindStreamwiseOrder!(WindFarm, CS)
 
 
-
+        
             # Iterating over turbine rows
             for CS.i=1:maximum(CS.CompOrder)
                 FindComputationRegion!(WindFarm, CS)
                 
                 if any(CS.ID_Turbines != 0) # Check if any turbine's wake has to be computed
-
-                Single_Wake_Computation!(WindFarm, CS)  #Compute single wake effect
-                
-                Superposition!(WindFarm, CS, WindFarm.u_ambient_zprofile)            #Compute mixed wake
-                
-                getTurbineInflow!(WindFarm, CS)         #Evaluate new inflow data
-                
-                getNewThrustandPower!(WindFarm, CS)     #Evaluate new operation properties
-
+                    try
+                        Single_Wake_Computation!(WindFarm, CS)  #Compute single wake effect
+                        
+                        Superposition!(WindFarm, CS, WindFarm.u_ambient_zprofile)            #Compute mixed wake
+                        
+                        getTurbineInflow!(WindFarm, CS)         #Evaluate new inflow data
+                        
+                        getNewThrustandPower!(WindFarm, CS)     #Evaluate new operation properties
+            
+                    catch #If meandering throws error
+                        CS.TotalPower=-Inf;
+                        CS.i=maximum(CS.CompOrder)
+                    end
                 end
             end
-                
-            getTotalPower!(CS)  #Compute total power of the wind farm 
+            
+            if CS.TotalPower == -Inf
+                CS.TotalPower=0  #Compute total power of the wind farm
+                println("Error at case: $case") 
+            else
+                getTotalPower!(CS)  #Compute total power of the wind farm 
+            end
 
             Powers_AllCases[case]=CS.TotalPower;   #Save computed power for this case
 
