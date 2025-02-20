@@ -33,22 +33,22 @@ userdata = OrderedDict{String, Any}(
     
     ## (4.1) Advanced Computational setting:
     #Superposition Method
-    "Superpos"  => "Linear_Rotorbased", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
+    "Superpos"  => "Momentum_Conserving", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
                                         #Possible inputs: "Linear_Rotorbased", "Momentum_Conserving"
     #Correction Models
-    "Meandering"=> true,                #Meandering correction as proposed by Braunbehrens & Segalini (2019).
+    "Meandering"=> false,                #Meandering correction as proposed by Braunbehrens & Segalini (2019).
 
     ##########      (5) Numerical parameters   ######################
-    "Rotor_Discretization"  => "fibonacci", #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
+    "Rotor_Discretization"  => "smart_grid", #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
                                             #Possible inputs: "gridded", "fibonacci" !!! Gridded has to be checked and corrected/ Thrown out
-    "Rotor_Res"             => 100,           #Number of points used to represent the rotor. Reccomendation: 100 for "gridded" & XX for "fibonacci".
+    "Rotor_Res"             => 4,           #Number of points used to represent the rotor. Reccomendation: 100 for "gridded" & XX for "fibonacci".
     
         # For Momentum conserving superposition only:
         "Uc_Res"                => 1000,      #Number of points to comppute wake for convection velocity (at each relevant streamwise position x). Has to be > 4
 
     ##########      (6) Result struct request  ######################
     
-    "Extended_Output"   => false,    #"false" returns consice result struct with the most important input and computed turbine performance data.
+    "Extended_Output"   => true,    #"false" returns consice result struct with the most important input and computed turbine performance data.
                                     #"true" returns all input computation struct in cell array "WF" as well as full "Computation_Struct" which includes all computational arrays & results. 
     
     ##########      (7) Graphical output       ######################

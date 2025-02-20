@@ -10,10 +10,12 @@ function FindComputationRegion!(WindFarm, CS)
 # Find computation region (to prevent unneccasary computation)
     CS.ID_Turbines              = vec(CS.Ct_vec .> 0) .& (CS.CompOrder .== CS.i)    #Identify turbines which should be included in this iterations computation
     CS.ID_OutOperConst          = vec(CS.Ct_vec .== 0)                              #Identify only turbines which are outside of operation constraints (below cut in/ above cut out windspeed)
-    CS.Computation_Region_ID    = (CS.XCoordinates[:,:,CS.ID_Turbines] .> 0.1e-10) .& (abs.(CS.YCoordinates[:,:,CS.ID_Turbines]) .< 20 .* WindFarm.D)  # Limit computation domain to reasonable scope
+    CS.Computation_Region_ID    = ((CS.XCoordinates[:,:,CS.ID_Turbines] .> 0.1e-10) .& (abs.(CS.r[:,:,CS.ID_Turbines]) .< 20 .* WindFarm.D) 
+                                    .& (abs.((CS.YCoordinates[:,:,CS.ID_Turbines]./CS.XCoordinates[:,:,CS.ID_Turbines])) .< 7.5))  # Limit computation domain to reasonable scope
         
         if WindFarm.Superpos == "Momentum_Conserving"
-        CS.Computation_Region_ID_for_Uc  = (CS.XCoordinates[:,:,CS.ID_Turbines] .> 0.1e-10) .& (abs.(CS.Y_for_Uc[:,:,CS.ID_Turbines]) .< 20 .* WindFarm.D)
+        CS.Computation_Region_ID_for_Uc  = ((CS.XCoordinates[:,:,CS.ID_Turbines] .> 0.1e-10) .& (abs.(CS.r_for_Uc[:,:,CS.ID_Turbines]) .< 20 .* WindFarm.D) 
+                                    .& (abs.((CS.Y_for_Uc[:,:,CS.ID_Turbines]./CS.XCoordinates[:,:,CS.ID_Turbines])) .< 7.5))  # Limit computation domain to reasonable scope
         end
 
     #Store ID of turbines whos wakes were already computed before or will be computed in this iteration (For superposition indication)
@@ -153,14 +155,18 @@ function Ishihara_WakeModel!(WindFarm, CS, Delta_U, Delta_TI, X, Z, R, ID, ID_Tu
     
         #Rotor-added turbulence
         #Include turbulence computation
-        k1[:,:,ID_Turbines]       .=   (1 .- (R[:,:,ID_Turbines]./WindFarm.D .<= 0.5)) .+ (R[:,:,ID_Turbines]./WindFarm.D .<= 0.5) .* 
+        k1[:,:,ID_Turbines]       .=   (1 .- (R[:,:,ID_Turbines]./WindFarm.D) .<= 0.5) .+ (R[:,:,ID_Turbines]./WindFarm.D .<= 0.5) .* 
                                         ((cos.(pi./2 .* (R[:,:,ID_Turbines]./WindFarm.D .- 0.5))).^2);
         k2[:,:,ID_Turbines]       .=   (R[:,:,ID_Turbines]./WindFarm.D .<= 0.5) .* ((cos.(pi./2 .* (R[:,:,ID_Turbines]./WindFarm.D .+ 0.5))).^2);
         delta                     .=   (Z .< WindFarm.H) .* (WindFarm.TI_a .* (sin.(pi .* (WindFarm.H .- (Z))./WindFarm.H)).^2);
     
-         Delta_TI[:,:,ID_Turbines] .=   ID .* (((1 ./ (CS.d[:,:,ID_Turbines] .+ CS.e[:,:,ID_Turbines] .* X[:,:,ID_Turbines]./WindFarm.D .+ CS.f[:,:,ID_Turbines] .* (1 .+ X[:,:,ID_Turbines]./WindFarm.D).^-2)) .* 
+        Delta_TI[:,:,ID_Turbines] .=   ID .* (((1 ./ (CS.d[:,:,ID_Turbines] .+ CS.e[:,:,ID_Turbines] .* X[:,:,ID_Turbines]./WindFarm.D .+ CS.f[:,:,ID_Turbines] .* (1 .+ X[:,:,ID_Turbines]./WindFarm.D).^-2)) .* 
                                         (k1[:,:,ID_Turbines] .* exp.(-(R[:,:,ID_Turbines] .- 0.5.*WindFarm.D).^2 ./ (2 .* (sigma[:,:,ID_Turbines]).^2)) .+ k2[:,:,ID_Turbines] .* exp.(-(R[:,:,ID_Turbines] .+ 0.5.*WindFarm.D).^2 ./(2 .* 
                                         (sigma[:,:,ID_Turbines]).^2)))) .- delta);# Compute rotor-added turbulence
+
+        # Correction for overly strong height corrections.
+        Delta_TI[Delta_TI .< 0]   .= 0;
+
 end#Ishihara_Wakemodel
 
 
