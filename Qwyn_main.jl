@@ -215,10 +215,6 @@ function Qwyn_AEP_RPStudy(TI_a::Real ,path2windrose, RPoints)
 
 ###############################################################################
 
-
-
-
-
 function Qwyn_AEP(TI_a::Real ,path2windrose)
 #=  This functions runs an AEP computation. 
     Input configs are taken from 01_Inputs.

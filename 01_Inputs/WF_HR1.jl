@@ -27,22 +27,22 @@ userdata = OrderedDict{String, Any}(
     "Wind_rose" => 3.14159999, # Get wind rose as specified in "04_Ambient_data"
 
     ##########      (4) Computational setting  ######################
-    "CompSetting"    => "Simple",    #= What do you want to compute? 1: "Simple" - comp. of one case
-                                                                     2: "AEP"    - comp of AEP  
-                                                                     3: "Optim"  - WF Optimization =#
-    
     ## (4.1) Advanced Computational setting:
+    #Wake Model
+    "WakeModel" => "Ishihara", #Single wake model. Choose between Ishihara-Qian (2018) and TurbOPark (2022). 
+                               #Possible inputs: "Ishihara", "TurbOPark"
+
     #Superposition Method
-    "Superpos"  => "Momentum_Conserving", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
-                                        #Possible inputs: "Linear_Rotorbased", "Momentum_Conserving"
+    "Superpos"  => "Linear_Rotorbased", #Superposition method for velocity deficits. Choose between linear rotorbased summation & momentum conserving approach. 
+                                          #Possible inputs: "Linear_Rotorbased", "Momentum_Conserving"
     #Correction Models
     "Meandering"=> false,                #Meandering correction as proposed by Braunbehrens & Segalini (2019).
 
     ##########      (5) Numerical parameters   ######################
-    "Rotor_Discretization"  => "smart_grid", #Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 
-                                            #Possible inputs: "gridded", "fibonacci" !!! Gridded has to be checked and corrected/ Thrown out
-    "Rotor_Res"             => 4,           #Number of points used to represent the rotor. Reccomendation: 100 for "gridded" & XX for "fibonacci".
-    
+    "Rotor_Discretization"  => "smart_grid",#Specifies the rotor descritization technique. Current choices: 1) Evenly distributed grid (slow with small error), 2) Fibonacci-Latice distributed points (quicker). 3) Smart grid. Mixture of Gaussian qudrature/ Circular gauss and fibonacci
+                                            #Possible inputs: "gridded", "fibonacci", "smart_grid" !!! Gridded has to be checked and corrected/ Thrown out
+    "Rotor_Res"             => 12,           #Number of points used to represent the rotor. Reccomendation: 100 for "gridded" & >21 for "fibonacci".
+                                            #For Smart Grid, Possible Inputes are: "1, 4, 6, 7, 9, 12, 21, >21".
         # For Momentum conserving superposition only:
         "Uc_Res"                => 1000,      #Number of points to comppute wake for convection velocity (at each relevant streamwise position x). Has to be > 4
 

@@ -24,15 +24,24 @@ end
 
 function Single_Wake_Computation!(WindFarm, CS)
 
+    if WindFarm.WakeModel == "Ishihara"
     ## For Ishihara - single wake model:
-    CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f = ComputeEmpiricalVars(CS.Ct_vec, CS.TI_0_vec, 
-    CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f, CS.ID_Turbines); # Compute empirical values
-    
-    Ishihara_WakeModel!(WindFarm, CS, CS.Delta_U, CS.Delta_TI, CS.XCoordinates, CS.ZCoordinates, CS.r, CS.Computation_Region_ID, CS.ID_Turbines, CS.sigma, CS.sigma_m, CS.Lambda, CS.k1, CS.k2, CS.delta, false)   
-    if WindFarm.Superpos == "Momentum_Conserving"
-        Ishihara_WakeModel!(WindFarm, CS, CS.Delta_U_for_Uc, CS.Delta_TI_for_Uc, CS.XCoordinates, CS.Z_for_Uc, CS.r_for_Uc, CS.Computation_Region_ID_for_Uc, CS.ID_Turbines, CS.sigma_for_Uc, CS.sigma_m_for_Uc, CS.Lambda_for_Uc, CS.k1_for_Uc, CS.k2_for_Uc, CS.delta_for_Uc, true) 
-    end
+        CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f = ComputeEmpiricalVars(CS.Ct_vec, CS.TI_0_vec, 
+        CS.k, CS.epsilon, CS.a, CS.b, CS.c, CS.d, CS.e, CS.f, CS.ID_Turbines); # Compute empirical values
 
+        Ishihara_WakeModel!(WindFarm, CS, CS.Delta_U, CS.Delta_TI, CS.XCoordinates, CS.ZCoordinates, CS.r, CS.Computation_Region_ID, CS.ID_Turbines, CS.sigma, CS.sigma_m, CS.Lambda, CS.k1, CS.k2, CS.delta, false)   
+        if WindFarm.Superpos == "Momentum_Conserving"
+            Ishihara_WakeModel!(WindFarm, CS, CS.Delta_U_for_Uc, CS.Delta_TI_for_Uc, CS.XCoordinates, CS.Z_for_Uc, CS.r_for_Uc, CS.Computation_Region_ID_for_Uc, CS.ID_Turbines, CS.sigma_for_Uc, CS.sigma_m_for_Uc, CS.Lambda_for_Uc, CS.k1_for_Uc, CS.k2_for_Uc, CS.delta_for_Uc, true) 
+        end
+
+    elseif WindFarm.WakeModel == "TurbOPark"
+        TurbOPark_WakeModel!(WindFarm, CS, CS.Delta_U, CS.Delta_TI, CS.XCoordinates, CS.ZCoordinates, CS.r, CS.Computation_Region_ID, CS.ID_Turbines, CS.sigma, CS.sigma_m, CS.Lambda, CS.k1, CS.k2, CS.delta, false)   
+        if WindFarm.Superpos == "Momentum_Conserving"
+            TurbOPark_WakeModel!(WindFarm, CS, CS.Delta_U_for_Uc, CS.Delta_TI_for_Uc, CS.XCoordinates, CS.Z_for_Uc, CS.r_for_Uc, CS.Computation_Region_ID_for_Uc, CS.ID_Turbines, CS.sigma_for_Uc, CS.sigma_m_for_Uc, CS.Lambda_for_Uc, CS.k1_for_Uc, CS.k2_for_Uc, CS.delta_for_Uc, true) 
+        end
+    else
+        error("Wrong choice of wake model. Check 'WakeModel' input. Possible entries: 'Ishihara' and 'TurbOPark'.")
+    end
 
 end#Single_Wake_Computation
 
@@ -71,7 +80,7 @@ function Superposition!(WindFarm, CS, u_ambient_zprofile)
 
             
         end
-        if WindFarm.CompSetting=="Simple" println("Convection velocity converged after $i iterations") end
+        println("Convection velocity converged after $i iterations")
 
         # Now Compute the wake for the rotor points with converged farm convection velocity U_c_Farm
         CS.weighting_Factor[:,:,CS.ID_Turbines_Computed] .= (CS.u_c_vec[:,:,CS.ID_Turbines_Computed]./CS.U_c_Farm)
@@ -213,6 +222,12 @@ function Meandering_Correction(sigma_m::Array{Float64}, psi::Array{Float64}, Lam
     
     return psi, Lambda, sigma_m          
 end#Meandering_Correction
-    
+
+
+function TurbOPark_WakeModel!(WindFarm, CS, Delta_U, Delta_TI, X, Z, R, ID, ID_Turbines, sigma, sigma_m, Lambda, k1, k2, delta, Call_for_Uc)
+# Compute single wake according to the TurbOPark model (2022)
+
+
+end
 #####################################################
 end
