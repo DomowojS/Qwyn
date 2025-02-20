@@ -76,8 +76,10 @@ export generateWF, ComputationData, read_Windrose_data
             Wind_rose::Float64; # Get wind rose as specified in "04_Ambient_data"
         
         ##########      (4) Computational setting  ######################
-            CompSetting::String;           # For the computation of one case
         ## (4.1) Advanced computational settings:
+        #Wake Model
+        WakeModel::String;      #Single wake model. Choose between Ishihara-Qian (2018) and TurbOPark (2022). 
+                                #Possible inputs: "Ishihara", "TurbOPark"
         #Superposition Method
             Superpos::String;    # Superposition using linear rotorbased summation for velocity deficit
         #Correction Models

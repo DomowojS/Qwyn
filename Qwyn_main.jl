@@ -106,6 +106,115 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
 
 end#Qwyn_Simple
 
+###############################################################################
+# TEMPORARY ONLY FOR STUDY #
+
+function Qwyn_AEP_RPStudy(TI_a::Real ,path2windrose, RPoints)
+    #=  This functions runs an AEP computation. 
+        Input configs are taken from 01_Inputs.
+        All function blocks can be found in 02_Modules
+    
+        Inputs:
+        1) Turbulence Intensity
+        2) Path to wind rose .txt file
+    =#
+        t_start = time(); #Timer
+    
+        #Read provided wind rose data
+        angles, speeds, frequencies=read_Windrose_data(path2windrose)
+    
+        WF = generateWF("WF", "01_Inputs", speeds[1], angles[1], TI_a) #Generate array consisting of all input data for each Input 
+                                                                       #file in "01_Inpts"
+        
+        AEP_Results=Vector(undef, length(WF));     #Preassign AEP-result vector
+        Powers_AllCases=Vector{Float64}(undef, length(angles))
+        TotalAEP=rand(1,1)
+        TotalAEP_SingleTurbine=Vector{Float64}(undef, 80)
+
+        # Iterate over defined cases. Compute one by one (according to settings)
+        i=0;#Loop counter
+        for WindFarm in WF 
+        t_start_loop = time();#Looptimer       
+        i=i+1;
+            println("###########################")
+            println("Number of Rotor Points: $RPoints")   #Terminal output for which input file is being processed
+            println("###########################")
+    
+            
+        P_vec_AllCases=Vector{Array{Float64,3}}(); #Reset P_vec from Config to Config
+    
+    
+        ######## START LOOP OVER all wind speeds HERE ############################
+            
+            last_printed_percent = Threads.Atomic{Int}(0)  # Atomic counter for progress
+            WindFarm.Rotor_Res = RPoints # Rotor Resolution
+            
+            for case in 1:length(frequencies)
+    
+                # Assign right wind speed & angle for this iteration
+                WindFarm.u_ambient = speeds[case] #speed
+                WindFarm.alpha     = angles[case] #angle
+                
+                #Initialise all arrays & matrices needed for the computation.
+                WindFarm, CS = initCompArrays(WindFarm) #Initialises mutable struct "CA" which contains necessary 
+                                                        #computation arrays & computes coordinates acc. to user Input.
+    
+                LoadTurbineDATA!(WindFarm, CS)          #Update Input & computation structs with provided power & 
+                                                        #thrust curves
+                
+                WindFarm.u_ambient_zprofile, CS = LoadAtmosphericData(WindFarm,CS)      #Update Input & computation structs with atmospheric data &
+                                                                                        #(wind shear profile, wind rose etc.)
+                
+                FindStreamwiseOrder!(WindFarm, CS)
+    
+    
+    
+                # Iterating over turbine rows
+                for CS.i=1:maximum(CS.CompOrder)
+                    FindComputationRegion!(WindFarm, CS)
+                    
+                    if any(CS.ID_Turbines != 0) # Check if any turbine's wake has to be computed
+    
+                    Single_Wake_Computation!(WindFarm, CS)  #Compute single wake effect
+                    
+                    Superposition!(WindFarm, CS, WindFarm.u_ambient_zprofile)            #Compute mixed wake
+                    
+                    getTurbineInflow!(WindFarm, CS)         #Evaluate new inflow data
+                    
+                    getNewThrustandPower!(WindFarm, CS)     #Evaluate new operation properties
+    
+                    end
+                end
+                    
+                getTotalPower!(CS)  #Compute total power of the wind farm 
+    
+                Powers_AllCases[case]=CS.TotalPower;   #Save computed power for this case
+                push!(P_vec_AllCases, CS.P_vec)           #Save computed power for each single turbine for this case
+    
+                 # Calculate and display progress every full percentage
+                    progress = round(Int, 100 * case / length(frequencies))
+                    old_progress = Threads.atomic_cas!(last_printed_percent, progress-1, progress)
+                    if old_progress != progress
+                        println("Progress: $progress%")
+                    end
+    
+            end
+                
+                TotalAEP=sum(Powers_AllCases.*frequencies) * 8760;               #Compute total AEP by multyplying power with frequencies
+                TotalAEP_SingleTurbine=sum(P_vec_AllCases.*frequencies) * 8760; #Compute total AEP by multyplying power with frequencies
+    
+               # Display end of computation 
+                println("Computation finished")
+                println("###########################")
+        end#Loop over Input structs
+    
+       return TotalAEP, TotalAEP_SingleTurbine
+       #return TotalAEP
+    
+    end#Qwyn_AEP_RPStudy
+
+###############################################################################
+
 function Qwyn_AEP(TI_a::Real ,path2windrose)
 #=  This functions runs an AEP computation. 
     Input configs are taken from 01_Inputs.

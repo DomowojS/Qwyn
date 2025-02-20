@@ -1,7 +1,7 @@
 # Module to initialise matrices and compute all necessary coordinates
 
 module Initialisation_Module
-using JLD2, Interpolations, LinearAlgebra, Random, StatsBase, Statistics
+using JLD2, Interpolations, LinearAlgebra, Random, StatsBase, Statistics, FastGaussQuadrature
 
 export initCompArrays, LoadTurbineDATA!, LoadAtmosphericData, FindStreamwiseOrder!, initGraphicArrays, correctGS
 
@@ -20,12 +20,15 @@ function initCompArrays(WindFarm)
         # Generates grid to represent the rotor plane
         if WindFarm.Rotor_Discretization == "gridded"
             #Generates an evenly distributed grid. Accurate representation for high number of points but very slow.
-            Y_vec, Z_vec = generate_rotor_grid(WindFarm.Rotor_Res)
+            Y_vec, Z_vec, W_vec = generate_rotor_grid(WindFarm.Rotor_Res)
         elseif WindFarm.Rotor_Discretization == "fibonacci"
             #Generates a fibonacci-lattice distributed grid. Accurate representation for significantly lower amount of points.
-            Y_vec, Z_vec = generate_fibonacci(WindFarm.Rotor_Res)
+            Y_vec, Z_vec, W_vec = generate_fibonacci(WindFarm.Rotor_Res)
+        elseif WindFarm.Rotor_Discretization == "smart_grid"
+            #Generates circles with even distribution
+            Y_vec, Z_vec, W_vec = generate_smart_rotorgrid(WindFarm.Rotor_Res)
         else
-            error("ERROR: Wrong choice of rotor discretization function for", WindFarm.Name,". Check variable Rotor_Discretization. Currently allowed entries: gridded, fibonacci.")
+            error("ERROR: Wrong choice of rotor discretization function for", WindFarm.Name,". Check variable Rotor_Discretization. Currently allowed entries: gridded, fibonacci, smart_grid.")
         end
 
         # Find and stor actual amount of points per rotor (after grid generation)
@@ -36,6 +39,7 @@ function initCompArrays(WindFarm)
         XCoordinate = zeros(Float64, WindFarm.N , 1, WindFarm.N);  #Array for X coordinates of all points
         YCoordinate = zeros(Float64, WindFarm.N , Real_Rotor_Res, WindFarm.N);  #Array for Y Coordinates of all points
         ZCoordinate = zeros(Float64, 1 , Real_Rotor_Res, 1);  #Vector containing all height coordinates
+        RotorPointWeights= zeros(Float64, 1 , Real_Rotor_Res, 1);  #Vector containing all Rotor point weights
 
         for i in 1:WindFarm.N
         # Create coordinate array of the structure: 1.Dim: Relative turbine, 2.Dim: RotorPoints, 3.Dim: Absolute turbine
@@ -46,6 +50,7 @@ function initCompArrays(WindFarm)
             YCoordinate[:,:,i] .= YCoordinate[:,:,i] .- WindFarm.y_vec[i]
         end
         ZCoordinate[1,:,1] .= Z_vec
+        RotorPointWeights[1,:,1] .= W_vec
 
     ### Generate grid for convection velocity computation (needed for momentum conserving superposition)
         if WindFarm.Superpos == "Momentum_Conserving"
@@ -105,13 +110,14 @@ function initCompArrays(WindFarm)
         Delta_TI_for_Uc             =   zeros(1,1,1)
         weighting_Factor_for_Uc     =   zeros(1,1,1)
         end    
+        
     #= Transform with respect to yaw angle
     TBDone!!
     =#
 
 
     # Create struct which holds all computation arrays
-    CS=ComputationStruct(WindFarm.name, 0.0, XCoordinate, YCoordinate, ZCoordinate, zeros(WindFarm.N , Real_Rotor_Res, WindFarm.N), Real_Rotor_Res,  alpha_Comp, Yaw_Comp,
+    CS=ComputationStruct(WindFarm.name, 0.0, XCoordinate, YCoordinate, ZCoordinate, RotorPointWeights, zeros(WindFarm.N , Real_Rotor_Res, WindFarm.N), Real_Rotor_Res,  alpha_Comp, Yaw_Comp,
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 0, 0, 0, (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), (zeros(1,1,WindFarm.N) .+ WindFarm.TI_a),
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
                             zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), zeros(WindFarm.N,Real_Rotor_Res,WindFarm.N), 
@@ -308,10 +314,12 @@ function generate_rotor_grid(totalPoints::Int)
         Z = Z[indices]
     end
 
-    return Y, Z
-end # generate_rotor_grid
+    # Even weight distribution
+    W = fill(1 / totalPoints, totalPoints)  # Equal weighting for Fibonacci points
 
-    
+    return Y, Z, W
+end # generate_rotor_grid
+  
 function generate_fibonacci(totalPoints::Int)
 # This function generates a fibonacci-lattice grid of points int the Y-Z plane to represent the turbine's rotor's.
 # Golden ratio
@@ -328,9 +336,98 @@ function generate_fibonacci(totalPoints::Int)
     Y = r .* cos.(θ)
     Z = r .* sin.(θ)
 
-    return Y, Z
+    # Even weight distribution
+    W = fill(1 / totalPoints, totalPoints)  # Equal weighting for Fibonacci points
+    
+    return Y, Z, W
 end #generate_fibonacci
 
+function generate_smart_rotorgrid(n::Int)
+#=
+   Generate integration points for rotor averaging.
+    
+   Parameters:
+   - n: Number of points. Allowed values: 1, 4, 6, 7, 9, 12, 21, or any value > 21.
+   
+   Returns:
+   - Y, Z: Cartesian coordinates of the integration points.
+   - weights: Corresponding integration weights.
+   
+   Throws an error if an unsupported number of points is provided.
+=#
+    
+    if n ∈ [4, 7, 9, 21]
+    # Predefined quadrature points and weights for CGI
+    pm = [[-0.5, -0.5], [-0.5, 0.5], [0.5, -0.5], [0.5, 0.5]]  # Base square points
+    YZ = Vector{Tuple{Float64, Float64}}()  # Ensure it can store floating-point values
+    end
+
+    if n == 1 #One center point at the hub
+        return [0.0], [0.0], [1.0]  # Single point with full weight
+    elseif n == 4 #4 points distributed using the circular gauss integration scheme
+        append!(YZ, [(0.5 * p[1], 0.5 * p[2]) for p in pm])
+        W = fill(1 / 4, 4)
+        return first.(YZ), last.(YZ), W
+
+    elseif n == 6 #6 points evenly distributed at r=2/3R (normalized to D)
+        theta = range(-π, π; length=7)[1:6]  # 6 evenly spaced angles
+        r = 2 / 3 .*0.5
+        Y = r * cos.(-theta .- π / 2)
+        Z = r * sin.(-theta .- π / 2)
+        W = fill(1 / 6, 6)  # Equal weighting
+        return Y, Z, W
+
+    elseif n == 7 #7 points distributed using the circular gauss integration scheme
+        push!(YZ, (0.0, 0.0))
+        append!(YZ, [(-sqrt(2 / 3).*0.5, 0.0), (sqrt(2 / 3).*0.5, 0.0)]) # Normalized to D
+        append!(YZ, [(sqrt(1 / 6) * p[1], sqrt(1 / 2) * p[2]) for p in pm])
+        W = [1 / 4; fill(1 / 8, 6)]
+        return first.(YZ), last.(YZ), W
+
+    elseif n == 9 #9 points distributed using the circular gauss integration scheme
+        push!(YZ, (0.0, 0.0))
+        append!(YZ, [(-0.5, 0.0), (0.5, 0.0), (0.0, -0.5), (0.0, 0.5)])
+        append!(YZ, [(0.5 * p[1], 0.5 * p[2]) for p in pm])
+        W = [1 / 6, 1 / 24, 1 / 24, 1 / 24, 1 / 24, 1 / 6, 1 / 6, 1 / 6, 1 / 6]
+        return first.(YZ), last.(YZ), W
+
+    elseif n == 12 #12 point distributed using the gauss quadratute 
+
+        # Gauss-Legendre quadrature nodes and weights for [-1,1] interval
+        y, weights_y = gausslegendre(4)
+        z, weights_z = gausslegendre(4)
+
+        # Create a 2D meshgrid of points
+        Y = repeat(y, inner=4)
+        Z = repeat(z, outer=4)
+        W = repeat(weights_y, inner=4) .* repeat(weights_z, outer=4)  # Compute 2D weights
+
+        # Keep only points inside the rotor
+        mask = Y.^2 + Z.^2 .< 1      
+        Y, Z, W = Y[mask].*0.5, Z[mask].*0.5, W[mask] ./ sum(W[mask])  # Apply mask correctly
+
+        return Y, Z, W
+    
+    elseif n == 21 #21 points distributed using the circular gauss integration scheme
+        θ_1 = [2 * π * k / 10 for k in 1:10]
+        θ_2 = [2 * π * k / 10 for k in 1:10]
+        r_1 = sqrt.((6 - sqrt(6)) / 10) .*0.5
+        r_2 = sqrt.((6 + sqrt(6)) / 10) .*0.5
+        
+        Y = vcat(0.0, r_1 .* cos.(θ_1), r_2 .* cos.(θ_2))
+        Z = vcat(0.0, r_1 .* sin.(θ_1), r_2 .* sin.(θ_2))
+        W = vcat(1 / 9, fill((16 + sqrt(6)) / 360, 10), fill((16 - sqrt(6)) / 360, 10))
+        return Y, Z, W
+
+    elseif n > 21 #>21 points distributed using the fibonacci lattice method
+        Y, Z, W = generate_fibonacci(n)
+        return Y, Z, W
+
+    else
+        error("Invalid number of Rotorpoints! For Smart grid generation choose Rotor_Res = 1, 4, 6, 7, 8, 9, 21, or n > 21.")
+    end
+
+end
 
 function generate_grid_for_Uc(min_y::Float64, max_y::Float64, min_z::Float64, max_z::Float64, num_points::Int)
 #Grid points for Uc
@@ -513,6 +610,7 @@ mutable struct ComputationStruct
     XCoordinates::Array{Float64,3};
     YCoordinates::Array{Float64,3};
     ZCoordinates::Array{Float64,3};
+    RotorPointWeights::Array{Float64,3};
     r::Array{Float64,3}; #Needed for single wake computation. Vector in radial & height direction.
     Real_Rotor_Res::Int; #Amount of computation points per rotor
     # Ambient data
@@ -590,6 +688,7 @@ mutable struct GraphicComputationStruct
         XCoordinates::Array{Float64,3};
         YCoordinates::Array{Float64,3};
         ZCoordinates::Array{Float64,3};
+        RotorPointWeights::Array{Float64,3};
         r::Array{Float64,3}; #Needed for single wake computation. Vector in radial & height direction.
         Real_Rotor_Res::Int; #Amount of computation points per rotor
         # Ambient data
