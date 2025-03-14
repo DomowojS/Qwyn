@@ -463,7 +463,8 @@ function initGraphicArrays(WindFarm)
         # Dimenisons: Relative X Coordinate, Relative Y Coordinate, Z Coordinate, Absolute turbine number
         XCoordinate = zeros(Float64, length(X_vec) , 1, WindFarm.N);               #Array for X coordinates of all points
         YCoordinate = zeros(Float64, length(X_vec) , Real_Rotor_Res, WindFarm.N);  #Array for Y Coordinates of all points
-        ZCoordinate = zeros(Float64, 1 , Real_Rotor_Res, 1);                       #Vector containing all height coordinates
+        ZCoordinate = zeros(Float64, 1 , 1, 1);  
+        RotorPointWeights= ones(Float64, 1 , Real_Rotor_Res, 1)./Real_Rotor_Res;  #Vector containing all Rotor point weights
 
         for i in 1:WindFarm.N
         # Create coordinate array of the structure: 1.Dim: Relative turbine, 2.Dim: RotorPoints, 3.Dim: Absolute turbine
@@ -473,10 +474,12 @@ function initGraphicArrays(WindFarm)
             end
             YCoordinate[:,:,i] .= YCoordinate[:,:,i] .- WindFarm.y_vec[i]
         end
-        ZCoordinate[1,:,1] .= Z_vec
+        ZCoordinate[1,:,1] .= WindFarm.Height #Z_vec
+
+    ## Plotting enabled ONLY with linear rotorbased summation at the moment!
 
     ### Generate grid for convection velocity computation (needed for momentum conserving superposition)
-        if WindFarm.Superpos == "Momentum_Conserving"
+        #= if WindFarm.Superpos == "Momentum_Conserving"
         # generate basic grid vector 
 
         if WindFarm.Uc_Res < 4; WindFarm.Uc_Res=4, println("Uc_Res corrected to minimal value 4") end #correction if resolution is chosen too small
@@ -514,7 +517,7 @@ function initGraphicArrays(WindFarm)
         Delta_TI_for_Uc             = zeros(WindFarm.N, WindFarm.Uc_Res, WindFarm.N)
         weighting_Factor_for_Uc     = zeros(WindFarm.N, WindFarm.Uc_Res, WindFarm.N)
         
-        else
+        else =#
 
         #Dummies for struct definition in case other superposition is used 
         Y_for_Uc                    =   zeros(1,1,1)
@@ -532,14 +535,14 @@ function initGraphicArrays(WindFarm)
         delta_for_Uc                =   zeros(1,1,1)
         Delta_TI_for_Uc             =   zeros(1,1,1)
         weighting_Factor_for_Uc     =   zeros(1,1,1)
-        end    
+        #end    
     #= Transform with respect to yaw angle
     TBDone!!
     =#
 
 
     # Create struct which holds all computation arrays
-    GS=ComputationStruct(WindFarm.name, 0.0, XCoordinate, YCoordinate, ZCoordinate, zeros(length(X_vec) , Real_Rotor_Res, WindFarm.N), Real_Rotor_Res,  alpha_Comp, Yaw_Comp,
+    GS=ComputationStruct(WindFarm.name, 0.0, XCoordinate, YCoordinate, ZCoordinate, RotorPointWeights, zeros(length(X_vec) , Real_Rotor_Res, WindFarm.N), Real_Rotor_Res,  alpha_Comp, Yaw_Comp,
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 0, 0, 0, (zeros(1,1,WindFarm.N) .+ WindFarm.u_ambient), (zeros(1,1,WindFarm.N) .+ WindFarm.TI_a),
                             zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), zeros(1,1,WindFarm.N), 
                             zeros(length(X_vec),Real_Rotor_Res,WindFarm.N), zeros(length(X_vec),Real_Rotor_Res,WindFarm.N), zeros(length(X_vec),Real_Rotor_Res,WindFarm.N), zeros(length(X_vec),Real_Rotor_Res,WindFarm.N), 
@@ -556,9 +559,9 @@ end#initGraphicArrays
 function generate_graphic_grid(WindFarm)
 # Generates gridded Array of Y and Z points for graphical computation of the "full flow field" 
     #Create ranges of Y and Z coordinates according to user Input
-    y = range(minimum(WindFarm.y_vec)-3, maximum(WindFarm.y_vec)+3, step=WindFarm.Resolution)
-    z = range(0, maximum(2 + WindFarm.H/WindFarm.D), length=length(y))
-    X = range(minimum(WindFarm.x_vec)-3, maximum(WindFarm.x_vec)+10, step=WindFarm.Resolution)
+    y = range(WindFarm.SpanwiseLimits[1], WindFarm.SpanwiseLimits[2], step=WindFarm.Resolution)
+    z = WindFarm.Height
+    X = range(WindFarm.StreamwiseLimits[1], WindFarm.StreamwiseLimits[2], step=WindFarm.Resolution)
 
     #Create gridded matrices of y and z 
     Z, Y = [xi for xi in z, yi in y], [yi for xi in z, yi in y]
@@ -578,25 +581,24 @@ function correctGS(GS, CS, WindFarm)
 # Assigns all already computed values (stored in CS) to graphic struct GS
 
     # Turbine Data
-        GS.Ct_vec = CS.Ct_vec #Ct of each turbine
-        GS.P_vec  = CS.P_vec  #P of each turbine
+        GS.Ct_vec = reshape(CS.Ct_vec, 1,1,WindFarm.N) #Ct of each turbine
+        GS.P_vec  = reshape(CS.P_vec, 1,1,WindFarm.N)  #P of each turbine
     
     # Coordinates
         # cancelling normalization
         GS.XCoordinates         .= GS.XCoordinates .* WindFarm.D
         GS.YCoordinates         .= GS.YCoordinates .* WindFarm.D
-        GS.ZCoordinates         .= GS.ZCoordinates .* WindFarm.D
         GS.r                    .= sqrt.(GS.YCoordinates.^2 .+ (GS.ZCoordinates.-WindFarm.H).^2) # Compute vector in radial & height direction for computation
+        
+    ######## Graphic Computation only enabled for Lineear rotorbased summation at the moment! #########
         # Points for convection velocity
-        if WindFarm.Superpos == "Momentum_Conserving"
-            GS.Y_for_Uc         .= GS.Y_for_Uc .* WindFarm.D
-            GS.Z_for_Uc         .= GS.Z_for_Uc .* WindFarm.D;
-            GS.r_for_Uc         .= sqrt.(GS.Y_for_Uc.^2 .+ (GS.Z_for_Uc .- WindFarm.H).^2) # Compute vector in radial & height direction for computation
-        end
+       # if WindFarm.Superpos == "Momentum_Conserving"
+       #     GS.Y_for_Uc         .= GS.Y_for_Uc .* WindFarm.D
+       #     GS.Z_for_Uc         .= GS.Z_for_Uc .* WindFarm.D;
+       #     GS.r_for_Uc         .= sqrt.(GS.Y_for_Uc.^2 .+ (GS.Z_for_Uc .- WindFarm.H).^2) # Compute vector in radial & height direction for computation
+       # end
 
-        GS.i = 1 #Fix iteration counter to 1 (no iteration in graphic comp.)
-
-
+    GS.i = 1 #Fix iteration counter to 1 (no iteration in graphic comp.)
 
     return GS
 

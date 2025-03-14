@@ -4,7 +4,7 @@ include("02_Modules/Initialisation_Module.jl")  #Module for array initialisation
 include("02_Modules/SimpleComputation.jl")      #Module for simple computation.
 include("02_Modules/Optimisation.jl")      #Module for optimisation
 include("02_Modules/Postprocessing.jl")
-using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Optimisation, .Postprocessing, MAT, Base.Threads, PlotlyJS, JLD2, FileIO
+using .Input_Processing, .Initialisation_Module, .SimpleComputation, .Optimisation, .Postprocessing, MAT, Base.Threads, JLD2, FileIO
 
 
 function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
@@ -30,7 +30,7 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
 
         #Initialise all arrays & matrices needed for the computation.
         println("Initialising arrays..")
-        WindFarm, CS = initCompArrays(WindFarm) #Initialises mutable struct "CA" which contains necessary 
+        WindFarm, CS = initCompArrays(WindFarm) #Initialises mutable struct "CS" which contains necessary 
                                                 #computation arrays & computes coordinates acc. to user Input.
 
         println("..loading turbine data..")
@@ -72,20 +72,13 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
         println("Computation time of input No.$i: $(round(t_end_loop, digits = 5)) s.")
         for i in 1:2 println(".") end
 
-        if any([WindFarm.Plot_power, WindFarm.Plot_windspeed, WindFarm.Plot_turbulence, WindFarm.Plot_wind_field, WindFarm.Plot_turbulence_field]) == true
-        println("Plots on the way...")
-            if any([WindFarm.Plot_power, WindFarm.Plot_windspeed, WindFarm.Plot_turbulence]) == true
-                SimplePlots(WindFarm, CS)
-            end
-
-            if any([WindFarm.Plot_wind_field, WindFarm.Plot_turbulence_field]) == true
-                GS = Qwyn_Graphic(WindFarm, CS)
-                AdvancedPlots(WindFarm, GS)
-            end
-
-            println("...finished!")
+        # Simple Plots
+        if any([WindFarm.Plot_power, WindFarm.Plot_windspeed, WindFarm.Plot_turbulence]) == true
+        println("Simple plots on the way...")
+            SimplePlots(WindFarm, CS)
+        println("...finished!")
         end
-    
+
      #TMP=reshape(CS.P_vec[[4, 12, 20, 28, 36, 44, 52, 60]]./CS.P_vec[4], 8) #270
      #TMP=reshape(CS.P_vec[[5, 12, 19, 26, 33]]./CS.P_vec[4], 5)              #222
      #TMP=reshape(CS.P_vec[[4, 13, 22, 31, 40]]./CS.P_vec[4], 5)             #312
@@ -106,6 +99,50 @@ function Qwyn_Simple(u_ambient::Real, alpha::Real, TI_a::Real)
 
 end#Qwyn_Simple
 
+function Qwyn_Farm_Field_Plotter(WiFa, Res, i::Int64, Plot::String, Height::Real, Resolution::Float64, Levels::Int64, StreamwiseLimits::Vector{<:Real}, SpanwiseLimits::Vector{<:Real})
+#= This function computes 
+        the flow field between the turbines.
+        Needs the Consice Result struct and input from previous computation (WF) (Output of Qwyn Simple)     
+    Inputs: 
+    1) Type WF 
+    2) Type Short Result
+    3) Integer Number (Which field of WF & Short Results to be plotted)
+    4) String: Which Plot?
+            - "Wind_Field"
+            - "Turbulence_Field"
+            - "Both"
+    5) At what height should the Y-Z Plane should be computed? (Put 0 for Hub Height)
+    6) Resolution of Plot (Float Number normalized to D)
+    7) Levels for contour plot
+    8) Streamwise Limits for calculation
+    9) Spanwise Limits for calculation
+=#
+
+    WindFarm=WiFa[i] # Choose which previous inputs should be used.
+    if Height == 0 WindFarm.Height = WindFarm.H else WindFarm.Height = Height end
+    WindFarm.Resolution = Resolution
+    WindFarm.StreamwiseLimits = StreamwiseLimits
+    WindFarm.SpanwiseLimits = SpanwiseLimits
+    CS = Res[i] # Choose which results should be used.
+
+    if Plot == "Wind_Field"
+        println("Computing Flow Field...")
+            GS = Qwyn_Graphic(WindFarm, CS)
+        println("...plotting wind field...")
+            AdvancedPlots(WindFarm, GS, Levels)
+
+    elseif Plot == "Turbulence_Field"
+        println("...not yet implemented...")
+    elseif Plot == "Both"
+        println("...not yet implemented...")
+    else
+        error("Invalid Plot request. Choose between: 'Wind_Field', 'Turbulence_Field' or 'Both'")
+    end
+
+        println("...finished!")
+
+end#Qwyn_Farm_Field_Plotter
+    
 ###############################################################################
 # TEMPORARY ONLY FOR STUDY #
 
@@ -391,9 +428,13 @@ function Qwyn_Layout_Optimiser(TI_a::Real ,path2windrose)
 
 end#Qwyn_Optimiser
 
+
+###########################################
+########## Functional elements ############
+###########################################
+
 function Qwyn_Graphic(WindFarm, CS)
 # Computes full flowfield at resolution as specified in InputFile
-    println("...computing Full Flow Field...")
 
     GS = initGraphicArrays(WindFarm)        #Initialises mutable struct "GS" which contains necessary 
                                             #computation arrays for Graphical Output
@@ -526,7 +567,6 @@ function plot_turbine_positions(x_vec_optimal, y_vec_optimal)
     
     return p
 end
-########## Functional elements ############
 
 # Consice result struct
 struct ShortResult

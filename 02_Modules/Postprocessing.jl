@@ -1,11 +1,12 @@
 #=
 Postprocessing module
-- Safe results in result struct
 - Compute Graphical output data
 - Plot as requested
 =#
 module Postprocessing
-using PlotlyJS
+using PlotlyJS: Plot, scatter, Layout, attr
+using GLMakie: Figure, Axis, contourf!, Colorbar
+
 export SimplePlots, AdvancedPlots
 
 function SimplePlots(WindFarm, CS)
@@ -210,46 +211,43 @@ function SimplePlots(WindFarm, CS)
 
 end#SimplePlots
 
-function AdvancedPlots(WindFarm, GS)
-#This function plots the advances plots (flow fields) 
+function AdvancedPlots(WindFarm, GS, Levels)
+
+    #Create grids for Plotting
+    x = GS.XCoordinates[:, 1, 1]./WindFarm.D
+    y = GS.YCoordinates[1, :, 1]./WindFarm.D
+    x_grid = repeat(x, 1, length(y))
+    y_grid = repeat(y', length(x), 1)
+
+
+    # Rotate system, so wind farm always looks identical (270° inflow left to right)
+    rotation_angle = deg2rad(270 - WindFarm.alpha)
+    x_grid_rotated = x_grid .* cos(rotation_angle) .- y_grid .* sin(rotation_angle)
+    y_grid_rotated = x_grid .* sin(rotation_angle) .+ y_grid .* cos(rotation_angle)
+
+
+    # Read wind data
+    z = GS.U_Farm[:, :, 1]./WindFarm.u_ambient_zprofile_4Graphic[1,1,1]
+
+    # Create a figure
+    fig = Figure(size = (800, 600))
     
-    if WindFarm.Plot_wind_field == true
-        z_level = WindFarm.H  # Replace with your specific Z-coordinate value
-
-        # Find the closest z-level in GS.ZCoordinates
-        z_coords = GS.ZCoordinates[1, :, 1]  # Extract relevant z values from GS.ZCoordinates
-        z_level = z_coords[argmin(abs.(z_coords .- z_level))]  # Closest z-level
-
-        # Extract the relevant slices
-        x = GS.XCoordinates[:, 1, 1]                  # X coordinates (size 55)
-        y = GS.YCoordinates[1, :, 1]                  # Y coordinates (size 729)
-        u_values = GS.U_Farm[:, :, 1]                 # U_Farm values for contour plot
-
-        # Filter data based on the specified z level
-        y_filtered = y[z_coords .== z_level]            # Only y values where z matches z_level
-        u_filtered = u_values[:, z_coords .== z_level]  # Corresponding U_Farm values
-
-        # Create the 2D contour plot
-        plt = plot(
-            contour(
-                y = x./WindFarm.D,
-                x = y_filtered./WindFarm.D,
-                z = transpose(u_filtered),
-                colorscale = "Viridis",
-                contours_coloring = "heatmap",
-                colorbar_title = "U_Farm",
-                linewidth = 0  # Set contour line width to 0
-            ),
-            Layout(
-                xaxis_title = "x/D",  # X-axis label
-                yaxis_title = "y/D"   # Y-axis label
-            )
-        )
+    # Create an axis
+    ax = Axis(
+        fig[1, 1],
+        xlabel = "x/D",
+        ylabel = "y/D",
+    )
     
-        # Display the plot
-        display(plt)
-    end
-
-end#AdvancedPlots
+    # Create the contour plot
+    co=contourf!(ax, x_grid_rotated, y_grid_rotated, z, colormap = :inferno, levels=range(0, 1, length = Levels))
+    
+    # Add a colorbar
+    Colorbar(fig[1, 2], co)
+    
+    # Display the figure
+    display(fig)
+    
+end
 
 end#Postprocessing Module

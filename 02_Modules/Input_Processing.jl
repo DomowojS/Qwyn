@@ -29,6 +29,10 @@ export generateWF, ComputationData, read_Windrose_data
     
     function WFConstructor(u_ambient::Real, alpha::Real, TI_a::Real, userdata::OrderedDict{String, Any})
         #Placeholders
+        userdata["Height"]              = 0.0                       # Height at which YZ Plane is to be evaluated
+        userdata["Resolution"]          = 0.0                       # Resolution of Plot (Float Number normalized to D)
+        userdata["StreawiseLimits"]     = [0.0, 0.0]                # Streamwise Limits for Wind Field Plots
+        userdata["SpanwiseLimits"]      = [0.0, 0.0]                # Spanwise Limits for Wind Field Plots
         userdata["D"]         = 0.0                     # Turbine diameter 
         userdata["H"]         = 0.0                     # Hub height in [m]
         userdata["P_Input"]   = zeros(1,1)              # Power coefficient - defined as .txt in "03_Turbine_Data"
@@ -103,14 +107,12 @@ export generateWF, ComputationData, read_Windrose_data
             Plot_turbulence::Bool;  #Plots average inflow turbulence of several turbines
             Turbine_Identification::Vector{Int};    #Identify, which turbines should be included in the plot
             Normalize_to::Int;                      #Specify which turbines power the plot should be normalised to (If no normalisation is wanted, type: 0)
-            # Advanced plots, advanced computation will commence
-            Plot_wind_field::Bool;      #Plots wind field for one simple case
-            Plot_turbulence_field::Bool;#Plots turbulence field for one simple case
-            Wind_Direction::Float64;    #Wind direction for plot (has to be a direction included during computation!)
-            Resolution::Real;           #Pick resolution in terms of Diameter  
-            Height::Float64;            #At what height [m] do you want to plot the 2D wind field (Y-Z plane)?
-            Depth::Float64;             #At what Y coordinate [1/D] do you want to plot the cross section wind field (X-Z plane)?
-
+        
+        ##########    Placeholders for Flow Field Plots ##################
+            Height::Real;
+            Resolution::Float64;
+            StreamwiseLimits::Vector{Float64};
+            SpanwiseLimits::Vector{Float64};
         ##########   Turbine Placeholders           ######################
             D::Float64;             # Turbine diameter in [m]
             H::Float64;             # Hub height in [m]
